@@ -35,37 +35,58 @@
                     <p class="mt-2 text-sm text-gray-600">
                         Don't have an account? 
                         <a href="/signup" class="font-medium text-dark-red hover:text-light-red">
-                            Sign up
+                            Or create a new account
                         </a>
                     </p>
                 </div>
 
                 <div class="mt-8">
-                    <form class="mt-8 space-y-6" action="/dashboard" method="GET">
-                     
+                     <form class="space-y-6" action="{{ route('signup.post') }}" method="POST">
         @csrf
-        <div>
-            <label for="email" class="block text-sm font-medium text-gray-700">
-                Email address
-            </label>
-            <div class="mt-1">
-                <input id="email" name="email" type="email" autocomplete="email" required 
-                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-dark-red focus:border-dark-red sm:text-sm"
-                    placeholder="Enter your email">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label for="firstName" class="block text-sm font-medium text-gray-700">
+                    First Name
+                </label>
+                <div class="mt-1">
+                    <input id="firstName" name="firstName" type="text" autocomplete="given-name" required 
+                        class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-dark-red focus:border-dark-red sm:text-sm"
+                        placeholder="First name">
+                </div>
+            </div>
+            <div>
+                <label for="lastName" class="block text-sm font-medium text-gray-700">
+                    Last Name
+                </label>
+                <div class="mt-1">
+                    <input id="lastName" name="lastName" type="text" autocomplete="family-name" required 
+                        class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-dark-red focus:border-dark-red sm:text-sm"
+                        placeholder="Last name">
+                </div>
             </div>
         </div>
+                    <form class="space-y-6" action="/dashboard" method="GET">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">
+                                Email address
+                            </label>
+                            <div class="mt-1">
+                                <input id="email" name="email" type="email" autocomplete="email" required 
+                                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-dark-red focus:border-dark-red sm:text-sm"
+                                    placeholder="Enter your email">
+                            </div>
+                        </div>
 
-        <div>
-            <label for="password" class="block text-sm font-medium text-gray-700">
-                Password
-            </label>
-            <div class="mt-1">
-                <input id="password" name="password" type="password" autocomplete="current-password" required 
-                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-dark-red focus:border-dark-red sm:text-sm"
-                    placeholder="Enter your password">
-            </div>
-        </div>
-
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700">
+                                Password
+                            </label>
+                            <div class="mt-1">
+                                <input id="password" name="password" type="password" autocomplete="current-password" required 
+                                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-dark-red focus:border-dark-red sm:text-sm"
+                                    placeholder="Enter your password">
+                            </div>
+                        </div>
 
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
@@ -103,7 +124,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-6 grid grid-cols-1 gap-3">
+                         <div class="mt-6 grid grid-cols-1 gap-3">
                             <a href="{{ route('google.login') }}" 
                             class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-150">
                             <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
@@ -114,11 +135,10 @@
                             </svg>
                             Continue with Google (Test)
                         </a>
-                    
                             <button type="button"
                                 class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
+                                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.08-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
                                 </svg>
                             </button>
                         </div>
@@ -127,8 +147,8 @@
             </div>
         </div>
 
-        <!-- Right Side - Image/Branding
-        <div class="hidden lg:block relative w-0 flex-1">
+        <!-- Right Side - Image/Branding -->
+        <!-- <div class="hidden lg:block relative w-0 flex-1">
             <div class="auth-bg absolute inset-0 h-full w-full flex items-center justify-center">
                 <div class="text-center text-white px-12">
                     <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-8">
