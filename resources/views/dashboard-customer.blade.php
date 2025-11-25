@@ -74,9 +74,21 @@
                         <img class="w-8 h-8 rounded-full object-cover" src="https://ui-avatars.com/api/?name=Customer&background=DC2626&color=fff" alt="Customer">
                     </div>
                 </div>
+                <!-- Add this in the header section after the user stats -->
+                <div class="flex items-center space-x-4">
+                    <div class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                        🏆 {{ $userStats['suki_points'] }} Suki Points
+                    </div>
+                    <a href="{{ route('switch.business') }}" 
+                    class="bg-dark-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-light-red transition duration-150">
+                    Switch to Business Mode
+                </a>
+                <img class="w-8 h-8 rounded-full object-cover" src="https://ui-avatars.com/api/?name=Customer&background=DC2626&color=fff" alt="Customer">
+            </div>
             </header>
 
             <!-- Quick Actions -->
+             
             <main class="p-6">
                 <div class="mb-8">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>

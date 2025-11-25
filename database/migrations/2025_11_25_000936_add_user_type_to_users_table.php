@@ -9,14 +9,17 @@ class AddUserTypeToUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('user_type', ['customer', 'business'])->default('customer');
+            $table->string('google_id')->nullable();
+            $table->string('password')->nullable()->change();
+            $table->integer('user_type')->default(1); // 1 = customer, 0 = business
         });
     }
 
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('user_type');
+            $table->dropColumn(['google_id', 'user_type']);
+            $table->string('password')->change();
         });
     }
 }

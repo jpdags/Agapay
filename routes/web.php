@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GoogleLoginController; // Add this line
 
 Route::get('/', function () {
     return view('welcome');
@@ -16,30 +17,9 @@ Route::post('/login', function () {
     return redirect('/dashboard');
 })->name('login.submit');
 
-// Mock Google OAuth Routes (for testing only)
-Route::get('/auth/google', function () {
-    // Mock Google OAuth consent screen
-    return view('mock-google-auth');
-})->name('google.login');
-Route::post('/auth/google/callback', function () {
-    // Simple test user creation that works with any table structure
-    $testUser = \App\Models\User::firstOrCreate(
-        ['email' => 'test@example.com'],
-        [
-            'name' => 'Test User', 
-            'password' => bcrypt('password'),
-            // Add other columns only if they exist in your table
-        ]
-    );
-    
-    Auth::login($testUser);
-    return redirect('/dashboard');
-})->name('google.callback');
-
-Route::get('/check-table', function () {
-    $columns = Schema::getColumnListing('users');
-    dd($columns);
-});
+// Google OAuth Routes
+Route::get('/auth/google/redirect', [GoogleLoginController::class, 'redirectToGoogle'])->name('google.redirect');
+Route::get('/auth/google/callback', [GoogleLoginController::class, 'handleGoogleCallback'])->name('google.callback');
 
 // Signup Routes
 Route::get('/signup', function () {
@@ -50,28 +30,25 @@ Route::post('/signup', function () {
     return redirect('/dashboard');
 })->name('signup.submit');
 
-// Dashboard Route
-Route::get('/dashboard', function () {
-    $stats = [
-        'total_users' => 1242,
-        'revenue' => '$45,231',
-        'conversion_rate' => '4.5%',
-        'pending_orders' => 28
-    ];
+// Dashboard Routes
+Route::get('/dashboard', [DashboardController::class, 'customerDashboard'])->name('dashboard');
+Route::get('/dashboard/business', [DashboardController::class, 'businessDashboard'])->name('business.dashboard');
+
+// Switch user type routes
+Route::get('/switch-to-business', [DashboardController::class, 'switchToBusiness'])->name('switch.business');
+Route::get('/switch-to-customer', [DashboardController::class, 'switchToCustomer'])->name('switch.customer');
+
+
+Route::get('/create-test-business', function() {
+    $user = \App\Models\User::create([
+        'name' => 'Test Business Owner',
+        'email' => 'business@test.com',
+        'password' => bcrypt('password'),
+        'user_type' => 0, // Business
+    ]);
     
-    $recent_activities = [
-        ['user' => 'John Doe', 'action' => 'placed a new order', 'time' => '2 min ago'],
-        ['user' => 'Sarah Smith', 'action' => 'updated profile', 'time' => '5 min ago'],
-    ];
-    
-    $chart_data = [
-        'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        'revenue' => [12000, 19000, 15000, 25000, 22000, 30000],
-        'users' => [100, 150, 130, 200, 180, 250]
-    ];
-    
-    return view('dashboard', compact('stats', 'recent_activities', 'chart_data'));
-})->name('dashboard');
+    return "Test business user created!";
+});
 
 // Logout Route
 Route::post('/logout', function () {
