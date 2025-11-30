@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     <style>
+        .bg-dark-red { background-color: #8B0000; }
         .text-dark-red { color: #8B0000; }
         .sidebar-link { transition: 0.2s; }
         .sidebar-link:hover { background: #FEE2E2; }
@@ -40,8 +41,8 @@
 
             <a href="{{ route('provider.services') }}" 
                class="flex items-center px-6 py-3 sidebar-link {{ request()->routeIs('provider.services') ? 'sidebar-active' : '' }}">
-                <span class="material-symbols-outlined mr-4">build</span>
-                My Services
+                <span class="material-symbols-outlined mr-4">store</span>
+                My Offerings
             </a>
 
             <a href="{{ route('provider.schedule') }}" 

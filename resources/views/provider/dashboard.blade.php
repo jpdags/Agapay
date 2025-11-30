@@ -21,10 +21,14 @@
     </div>
 
     <h3 class="text-xl font-semibold mb-4">Recent Requests</h3>
-    @foreach($requests as $request)
+    @forelse($requests as $request)
         <div class="bg-white p-6 rounded shadow mb-4">
-            <p><strong>{{ $request->customer_name }}</strong> has requested a service: {{ $request->service }}.</p>
-            <p><small>Scheduled for {{ $request->schedule }}</small></p>
+            <p><strong>{{ $request->customer_name ?? 'Customer' }}</strong> has requested a service: {{ $request->service ?? 'Service' }}.</p>
+            <p><small>Scheduled for {{ $request->schedule ?? 'Not scheduled' }}</small></p>
         </div>
-    @endforeach
+    @empty
+        <div class="bg-white p-6 rounded shadow mb-4">
+            <p class="text-gray-500 text-center">No recent requests.</p>
+        </div>
+    @endforelse
 @endsection

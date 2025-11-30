@@ -58,7 +58,7 @@
 
             <!-- Cancel Button -->
             <div class="text-center">
-                <a href="{{ route('login.show') }}" 
+                <a href="{{ route('login') }}" 
                    class="text-gray-600 hover:text-gray-800 text-sm font-medium">
                     Cancel
                 </a>

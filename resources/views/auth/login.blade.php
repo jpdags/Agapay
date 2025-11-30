@@ -41,7 +41,17 @@
                 </div>
 
                 <div class="mt-8">
-                    <form class="mt-8 space-y-6" action="/dashboard" method="GET">
+                    @if ($errors->any())
+                        <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                            <ul class="list-disc list-inside">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form class="mt-8 space-y-6" action="{{ route('login') }}" method="POST">
                      
         @csrf
         <div>
@@ -50,8 +60,12 @@
             </label>
             <div class="mt-1">
                 <input id="email" name="email" type="email" autocomplete="email" required 
-                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-dark-red focus:border-dark-red sm:text-sm"
+                    value="{{ old('email') }}"
+                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-dark-red focus:border-dark-red sm:text-sm @error('email') border-red-500 @enderror"
                     placeholder="Enter your email">
+                @error('email')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
         </div>
 
