@@ -41,7 +41,7 @@
                 </div>
 
                 <div class="mt-8">
-                     <form class="space-y-6" action="{{ route('signup.post') }}" method="POST">
+                     <form class="space-y-6" action="{{ route('signup.submit') }}" method="POST">
         @csrf
         <div class="grid grid-cols-2 gap-4">
             <div>
