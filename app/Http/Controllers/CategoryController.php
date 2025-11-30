@@ -2,50 +2,58 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Product;
+use App\Models\Service;
+use App\Models\Entrepreneurship;
+use Illuminate\Support\Facades\Auth;
 
 class CategoryController extends Controller
 {
     // Show the main categories selection page
     public function index()
     {
+        // If user is logged in and is a customer, use customer layout with userStats
+        if (Auth::check() && Auth::user()->user_type === 'customer') {
+            $userStats = [
+                'suki_points' => 0, 
+                'total_orders' => 0,
+                'pending_orders' => 0,
+                'completed_orders' => 0,
+            ];
+            
+            // Get real data from database for display
+            $products = Product::with('user')->get();
+            $services = Service::with('user')->get();
+            $businesses = Entrepreneurship::with('user')->get();
+            
+            return view('customer.categories', compact('userStats', 'products', 'services', 'businesses'));
+        }
+        
+        // Otherwise use the simple categories view
         return view('categories.index');
     }
 
     // Show products
     public function products()
     {
-        // Example products array; replace with DB query if needed
-        $products = [
-            ['name' => 'Handmade Basket', 'description' => 'Eco-friendly woven basket', 'price' => 150],
-            ['name' => 'Organic Honey', 'description' => 'Locally sourced', 'price' => 250],
-            ['name' => 'Herbal Soap', 'description' => 'Natural ingredients', 'price' => 100],
-        ];
-
+        // Real data from database
+        $products = Product::with('user')->get();
         return view('categories.products', compact('products'));
     }
 
     // Show services
     public function services()
     {
-        $services = [
-            ['name' => 'Plumbing', 'description' => 'Fix leaks and pipe issues', 'price' => 500],
-            ['name' => 'Tutoring', 'description' => 'Math and English lessons', 'price' => 300],
-            ['name' => 'House Cleaning', 'description' => 'Keep your home spotless', 'price' => 400],
-        ];
-
+        // Real data from database
+        $services = Service::with('user')->get();
         return view('categories.services', compact('services'));
     }
 
     // Show entrepreneurship / local businesses
     public function entrepreneurship()
     {
-        $businesses = [
-            ['name' => 'Juan\'s Bakery', 'description' => 'Fresh bread daily', 'contact' => '0917-123-4567'],
-            ['name' => 'Maria\'s Crafts', 'description' => 'Handmade decorations', 'contact' => '0917-987-6543'],
-            ['name' => 'Pedro\'s Carinderia', 'description' => 'Home-cooked meals', 'contact' => '0917-555-1212'],
-        ];
-
+        // Real data from database
+        $businesses = Entrepreneurship::with('user')->get();
         return view('categories.entrepreneurship', compact('businesses'));
     }
 }

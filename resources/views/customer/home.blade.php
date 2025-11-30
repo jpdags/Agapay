@@ -10,28 +10,28 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Products -->
-            <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition">
+            <a href="{{ route('categories') }}?category=products" class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition block">
                 <span class="material-symbols-outlined text-4xl text-dark-red mb-3">inventory_2</span>
                 <h4 class="font-semibold text-gray-800">Products</h4>
                 <p class="text-sm text-gray-600 mt-1">Browse barangay-made goods</p>
-                <a href="{{ route('categories') }}" class="text-blue-500 hover:text-blue-700">Explore Products</a>
-            </div>
+                <span class="text-blue-500 hover:text-blue-700 inline-block mt-2">Explore Products →</span>
+            </a>
 
             <!-- Services -->
-            <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition">
+            <a href="{{ route('categories') }}?category=services" class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition block">
                 <span class="material-symbols-outlined text-4xl text-dark-red mb-3">handyman</span>
                 <h4 class="font-semibold text-gray-800">Services</h4>
                 <p class="text-sm text-gray-600 mt-1">Find local helpers & service providers</p>
-                <a href="{{ route('categories') }}" class="text-blue-500 hover:text-blue-700">Explore Services</a>
-            </div>
+                <span class="text-blue-500 hover:text-blue-700 inline-block mt-2">Explore Services →</span>
+            </a>
 
             <!-- Entrepreneurship -->
-            <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition">
+            <a href="{{ route('categories') }}?category=entrepreneurship" class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition block">
                 <span class="material-symbols-outlined text-4xl text-dark-red mb-3">trending_up</span>
                 <h4 class="font-semibold text-gray-800">Entrepreneurship</h4>
                 <p class="text-sm text-gray-600 mt-1">Start and grow your barangay business</p>
-                <a href="{{ route('categories') }}" class="text-blue-500 hover:text-blue-700">Explore Entrepreneurship</a>
-            </div>
+                <span class="text-blue-500 hover:text-blue-700 inline-block mt-2">Explore Entrepreneurship →</span>
+            </a>
         </div>
     </div>
 
@@ -61,15 +61,17 @@
         <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h3>
             <div class="space-y-3">
-                @foreach($recentActivities as $activity)
+                @forelse($recentActivities as $activity)
                     <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                         <div class="w-2 h-2 mt-2 bg-dark-red rounded-full"></div>
                         <div class="flex-1">
-                            <p class="text-sm text-gray-800">{{ $activity['message'] }}</p>
-                            <p class="text-xs text-gray-500">{{ $activity['time'] }}</p>
+                            <p class="text-sm text-gray-800">{{ $activity['message'] ?? $activity->message ?? 'Activity' }}</p>
+                            <p class="text-xs text-gray-500">{{ $activity['time'] ?? $activity->time ?? '' }}</p>
                         </div>
                     </div>
-                @endforeach
+                @empty
+                    <p class="text-gray-500 text-center py-4">No recent activities.</p>
+                @endforelse
             </div>
         </div>
     </div>
