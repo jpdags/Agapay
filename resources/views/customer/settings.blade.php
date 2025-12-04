@@ -29,7 +29,7 @@
             <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                <div class="flex items-center gap-4 mb-4">
+            <div class="flex items-center gap-4 mb-4">
                     @if($user->photo)
                         <img id="photo-preview" class="w-16 h-16 rounded-full object-cover"
                             src="{{ asset('storage/photos/' . $user->photo) }}"
@@ -41,46 +41,46 @@
                     @endif
                     <div>
                         <label for="photo" class="block px-4 py-2 bg-dark-red text-white rounded hover:bg-red-800 cursor-pointer text-center">
-                            Change Photo
+                    Change Photo
                         </label>
                         <input type="file" id="photo" name="photo" accept="image/*" class="hidden" onchange="previewPhoto(this)">
                     </div>
-                </div>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                         <label for="name" class="block text-sm text-gray-600 mb-1">Full Name</label>
                         <input type="text" id="name" name="name" value="{{ old('name', $user->name) }}"
                             class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red"
                             required>
-                    </div>
+                </div>
 
-                    <div>
+                <div>
                         <label for="email" class="block text-sm text-gray-600 mb-1">Email</label>
                         <input type="email" id="email" value="{{ $user->email }}"
                             class="w-full px-3 py-2 border rounded-lg bg-gray-100 cursor-not-allowed"
                             disabled>
                         <p class="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-                    </div>
+                </div>
 
-                    <div>
+                <div>
                         <label for="phone" class="block text-sm text-gray-600 mb-1">Phone Number</label>
                         <input type="text" id="phone" name="phone" value="{{ old('phone', $user->phone) }}"
                             class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red"
                             placeholder="e.g., 09123456789">
-                    </div>
+                </div>
 
-                    <div>
+                <div>
                         <label for="address" class="block text-sm text-gray-600 mb-1">Address</label>
                         <input type="text" id="address" name="address" value="{{ old('address', $user->address) }}"
                             class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red"
                             placeholder="e.g., 123 Main St, Barangay Name">
-                    </div>
                 </div>
+            </div>
 
                 <button type="submit" class="mt-4 px-5 py-2 bg-dark-red text-white rounded hover:bg-red-800 transition">
-                    Save Changes
-                </button>
+                Save Changes
+            </button>
             </form>
         </div>
 

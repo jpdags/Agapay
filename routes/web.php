@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\CategoryController;
 use App\Models\User;
+use App\Http\Controllers\GoogleLoginController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -18,7 +19,7 @@ Route::get('/login', function () {
         return redirect('/dashboard');
     }
     return view('auth.login');
-})->name('login'); // Named 'login' for Laravel's auth middleware compatibility
+})->name('login'); 
 
 Route::post('/login', function (\Illuminate\Http\Request $request) {
     $credentials = $request->validate([
@@ -28,12 +29,16 @@ Route::post('/login', function (\Illuminate\Http\Request $request) {
 
     if (Auth::attempt($credentials, $request->boolean('remember-me'))) {
         $request->session()->regenerate();
-        return redirect()->intended('/dashboard');
+        
+        // Redirect based on user's actual role
+        $user = Auth::user();
+        if ($user->user_type === 0) {
+            return redirect()->route('dashboard.provider');
+        }
+        return redirect()->route('home');
     }
 
-    return back()->withErrors([
-        'email' => 'The provided credentials do not match our records.',
-    ])->onlyInput('email');
+    return back()->withErrors(['email' => 'The provided credentials do not match our records.'])->onlyInput('email');
 })->name('login');
 
 // -------------------------
@@ -48,22 +53,30 @@ Route::get('/signup', function () {
 
 Route::post('/signup', function (\Illuminate\Http\Request $request) {
     $validated = $request->validate([
-        'name' => ['required', 'string', 'max:255'],
+        'firstName' => ['required', 'string', 'max:255'],
+        'lastName' => ['required', 'string', 'max:255'],
         'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
         'password' => ['required', 'string', 'min:8', 'confirmed'],
-        'user_type' => ['required', 'in:customer,business'],
+        'user_type' => ['required', 'in:customer,provider'],
     ]);
 
+    // Convert user_type: customer = 1, provider = 0
+    $userType = $validated['user_type'] === 'customer' ? 1 : 0;
+
     $user = User::create([
-        'name' => $validated['name'],
+        'name' => $validated['firstName'] . ' ' . $validated['lastName'],
         'email' => $validated['email'],
         'password' => Hash::make($validated['password']),
-        'user_type' => $validated['user_type'],
+        'user_type' => $userType,
     ]);
 
     Auth::login($user);
 
-    return redirect('/dashboard');
+    // Redirect based on role
+    if ($userType === 0) {
+        return redirect()->route('dashboard.provider');
+    }
+    return redirect()->route('home');
 })->name('signup.submit');
 
 // -------------------------
@@ -76,7 +89,8 @@ Route::get('/dashboard', function () {
 
     $user = Auth::user();
     
-    if ($user->user_type === 'business') {
+    // user_type: 0 = provider, 1 = customer
+    if ($user->user_type === 0) {
         return redirect()->route('dashboard.provider');
     } else {
         return redirect()->route('home');
@@ -94,18 +108,63 @@ Route::get('/home', function () {
 
     $user = Auth::user();
     
-    // Real data from database - will be 0 if no data exists yet
+    // Get real orders from database
+    $orders = \App\Models\Order::where('customer_id', $user->id)
+        ->with('provider')
+        ->orderBy('created_at', 'desc')
+        ->get();
+    
+    // Manually load offerings for each order
+    foreach ($orders as $order) {
+        $order->loadOffering();
+    }
+    
+    // Calculate real stats from orders
+    // Update suki_points if needed (in case of data inconsistency)
+    $user->updateSukiPoints();
+    $user->refresh();
+    
     $userStats = [
-        'suki_points' => 0, // TODO: Calculate from orders/bookings
-        'total_orders' => 0, // TODO: Count from orders table when created
-        'pending_orders' => 0, // TODO: Count pending orders
-        'completed_orders' => 0, // TODO: Count completed orders
+        'suki_points' => $user->suki_points ?? $user->calculateSukiPoints(),
+        'total_orders' => $orders->count(),
+        'pending_orders' => $orders->where('status', 'pending')->count(),
+        'completed_orders' => $orders->where('status', 'completed')->count(),
     ];
 
-    // Real data from database - empty for now until orders/bookings tables exist
-    $recentActivities = collect([]); // TODO: Get from orders/bookings when tables exist
+    // Get recent activities from orders (last 5 orders)
+    $recentActivities = $orders->take(5)->map(function ($order) {
+        $offeringName = $order->offering_name ?? 'Unknown';
+        $status = ucfirst($order->status);
+        return [
+            'message' => "Ordered {$offeringName} - Status: {$status}",
+            'time' => $order->created_at->diffForHumans(),
+            'order' => $order
+        ];
+    });
 
-    $upcomingSchedules = collect([]); // TODO: Get from schedules/bookings when tables exist
+    // Get upcoming schedules (orders with scheduled dates in the future)
+    $upcomingSchedules = $orders
+        ->filter(function ($order) {
+            if (!$order->scheduled_date) {
+                return false;
+            }
+            $scheduledDate = \Carbon\Carbon::parse($order->scheduled_date);
+            return $scheduledDate->isFuture() || $scheduledDate->isToday();
+        })
+        ->sortBy('scheduled_date')
+        ->take(5)
+        ->map(function ($order) {
+            $offeringName = $order->offering_name ?? 'Unknown';
+            $date = $order->scheduled_date ? \Carbon\Carbon::parse($order->scheduled_date)->format('M d, Y') : 'Not scheduled';
+            $time = $order->scheduled_time ? \Carbon\Carbon::parse($order->scheduled_time)->format('h:i A') : 'Not set';
+            return [
+                'title' => $offeringName,
+                'description' => "Order #{$order->id} - {$order->status}",
+                'date' => $date,
+                'time' => $time,
+                'order' => $order
+            ];
+        });
 
     return view('customer.home', [
         'userStats' => $userStats,
@@ -131,8 +190,12 @@ Route::get('/bookings', function () {
         $booking->loadOffering();
     }
     
+    // Update suki_points if needed
+    $user->updateSukiPoints();
+    $user->refresh();
+    
     $userStats = [
-        'suki_points' => 0, 
+        'suki_points' => $user->suki_points ?? $user->calculateSukiPoints(),
         'total_orders' => $bookings->count(),
         'pending_orders' => $bookings->where('status', 'pending')->count(),
         'completed_orders' => $bookings->where('status', 'completed')->count(),
@@ -212,13 +275,20 @@ Route::get('/settings', function () {
     }
     $user = Auth::user();
     
-    $userStats = [
-        'suki_points' => 0, 
-        'total_orders' => 0,
-        'pending_orders' => 0,
-        'completed_orders' => 0,
-    ];
+    // Get orders for stats
+    $orders = \App\Models\Order::where('customer_id', $user->id)->get();
     
+    // Update suki_points if needed
+    $user->updateSukiPoints();
+    $user->refresh();
+    
+    $userStats = [
+        'suki_points' => $user->suki_points ?? $user->calculateSukiPoints(),
+        'total_orders' => $orders->count(),
+        'pending_orders' => $orders->where('status', 'pending')->count(),
+        'completed_orders' => $orders->where('status', 'completed')->count(),
+    ];
+
     return view('customer.settings', compact('userStats', 'user'));
 })->name('settings');
 
@@ -329,8 +399,17 @@ Route::post('/provider/order/{id}/update-status', function (\Illuminate\Http\Req
         'status' => ['required', 'in:accepted,declined,completed,cancelled'],
     ]);
     
+    $oldStatus = $order->status;
     $order->status = $validated['status'];
     $order->save();
+    
+    // Award Suki Points when order is completed
+    if ($validated['status'] === 'completed' && $oldStatus !== 'completed') {
+        $customer = \App\Models\User::find($order->customer_id);
+        if ($customer) {
+            $customer->updateSukiPoints();
+        }
+    }
     
     return redirect()->route('provider.requests')->with('success', 'Order status updated successfully!');
 })->name('provider.order.update-status');
@@ -398,7 +477,7 @@ Route::post('/provider/offering/store', function (\Illuminate\Http\Request $requ
             'contact' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
         ]);
-        
+
         $business = new \App\Models\Entrepreneurship();
         $business->name = $validated['name'];
         $business->category = $validated['category'];
@@ -562,26 +641,13 @@ Route::post('/provider/verification', function (\Illuminate\Http\Request $reques
 })->name('provider.verification.update');
 
 // -------------------------
-// Google Auth (Mock/Test)
+// Google OAuth Routes
 // -------------------------
-Route::get('/auth/google', function () {
-    return view('mock-google-auth');
-})->name('google.login');
+Route::get('/auth/google/redirect', [GoogleLoginController::class, 'redirectToGoogle'])->name('google.redirect');
+Route::get('/auth/google/callback', [GoogleLoginController::class, 'handleGoogleCallback'])->name('google.callback');
+Route::get('/auth/google/select-role', [GoogleLoginController::class, 'showRoleSelection'])->name('google.role.select');
+Route::post('/auth/google/select-role', [GoogleLoginController::class, 'handleRoleSelection'])->name('google.role.submit');
 
-Route::post('/auth/google/callback', function (\Illuminate\Http\Request $request) {
-    // Mock Google OAuth callback - creates or logs in test user
-    $user = User::firstOrCreate(
-        ['email' => 'test@example.com'],
-        [
-            'name' => 'Test User',
-            'password' => Hash::make('password'),
-            'user_type' => 'customer',
-        ]
-    );
-
-    Auth::login($user);
-    return redirect('/dashboard');
-})->name('google.callback');
 
 // -------------------------
 // Categories Page (Public)

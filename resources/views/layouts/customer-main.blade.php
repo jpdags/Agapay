@@ -40,14 +40,14 @@
             <div class="flex-1">
                 <!-- Home Link -->
                 <a href="{{ route('home') }}" 
-                class="flex items-center px-6 py-3 text-gray-700 {{ request()->routeIs('home') ? 'sidebar-active' : '' }}">
+                   class="flex items-center px-6 py-3 text-gray-600 hover:bg-red-50 {{ request()->routeIs('home') ? 'sidebar-active' : '' }}">
                     <span class="material-symbols-outlined text-2xl mr-4">home</span>
                     <span class="font-medium">Home</span>
                 </a>
 
                 <!-- Categories Link -->
                 <a href="{{ route('categories') }}" 
-                   class="flex items-center px-6 py-3 text-gray-600 hover:bg-red-50 {{ request()->routeIs('categories') ? 'sidebar-active' : '' }}">
+                   class="flex items-center px-6 py-3 text-gray-600 hover:bg-red-50 {{ request()->routeIs('categories') || request()->routeIs('categories.*') ? 'sidebar-active' : '' }}">
                     <span class="material-symbols-outlined text-2xl mr-4">shoppingmode</span>
                     <span class="font-medium">Categories</span>
                 </a>
@@ -94,9 +94,6 @@
                     <div class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
                         🏆 {{ $userStats['suki_points'] ?? '0' }} Suki Points
                     </div>
-                    <img class="w-8 h-8 rounded-full object-cover"
-                         src="https://ui-avatars.com/api/?name=Customer&background=DC2626&color=fff"
-                         alt="Customer">
                 </div>
             </div>
         </header>

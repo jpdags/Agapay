@@ -90,11 +90,11 @@
         <h2 class="text-lg font-semibold text-gray-800 mb-4">Verification Status</h2>
 
         <p class="text-gray-700">
-            <strong>Status:</strong>
+        <strong>Status:</strong>
             <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full ml-2">
                 Pending Verification
-            </span>
-        </p>
+        </span>
+    </p>
         <p class="text-gray-500 text-sm mt-1">Your account is being reviewed for verification.</p>
 
         <div class="mt-4">
@@ -103,7 +103,7 @@
                 <li>Valid ID (Government-issued)</li>
                 <li>Barangay Certificate</li>
                 <li>Business Permit (if applicable)</li>
-            </ul>
+    </ul>
         </div>
 
         <button class="mt-4 px-4 py-2 bg-dark-red text-white rounded hover:bg-red-800 transition">
@@ -123,7 +123,7 @@
 
             <button class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
                 Manage Notifications
-            </button>
+    </button>
 
             <button class="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
                 Delete Account
@@ -131,7 +131,7 @@
         </div>
     </div>
 
-    </div>
+</div>
 
 <script>
     function previewPhoto(input) {

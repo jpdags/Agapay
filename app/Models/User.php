@@ -25,6 +25,8 @@ class User extends Authenticatable
         'email',
         'password',
         'user_type',
+        'google_id',
+        'suki_points',
         'phone',
         'address',
         'photo',
@@ -79,5 +81,25 @@ class User extends Authenticatable
     public function ordersAsProvider()
     {
         return $this->hasMany(Order::class, 'provider_id');
+    }
+
+    // Calculate Suki Points from completed orders (1 point per ₱100)
+    public function calculateSukiPoints()
+    {
+        $completedOrders = $this->ordersAsCustomer()
+            ->where('status', 'completed')
+            ->get();
+        
+        $totalAmount = $completedOrders->sum('total_amount');
+        
+        // 1 point per ₱100, rounded down
+        return (int) floor($totalAmount / 100);
+    }
+
+    // Update suki_points based on completed orders
+    public function updateSukiPoints()
+    {
+        $this->suki_points = $this->calculateSukiPoints();
+        $this->save();
     }
 }

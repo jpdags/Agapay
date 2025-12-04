@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Entrepreneurship;
+use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 
 class CategoryController extends Controller
@@ -12,13 +13,22 @@ class CategoryController extends Controller
     // Show the main categories selection page
     public function index()
     {
-        // If user is logged in and is a customer, use customer layout with userStats
-        if (Auth::check() && Auth::user()->user_type === 'customer') {
+        // If user is logged in and is a customer (user_type = 1), use customer layout with userStats
+        if (Auth::check() && Auth::user()->user_type === 1) {
+            $user = Auth::user();
+            
+            // Get orders for stats
+            $orders = Order::where('customer_id', $user->id)->get();
+            
+            // Update suki_points if needed
+            $user->updateSukiPoints();
+            $user->refresh();
+            
             $userStats = [
-                'suki_points' => 0, 
-                'total_orders' => 0,
-                'pending_orders' => 0,
-                'completed_orders' => 0,
+                'suki_points' => $user->suki_points ?? $user->calculateSukiPoints(),
+                'total_orders' => $orders->count(),
+                'pending_orders' => $orders->where('status', 'pending')->count(),
+                'completed_orders' => $orders->where('status', 'completed')->count(),
             ];
             
             // Get real data from database for display

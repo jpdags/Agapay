@@ -51,6 +51,12 @@
                         </div>
                     @endif
 
+                    @if (session('error'))
+                        <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     <form class="mt-8 space-y-6" action="{{ route('login') }}" method="POST">
                      
         @csrf

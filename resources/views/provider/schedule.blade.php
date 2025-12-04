@@ -25,9 +25,9 @@
 <!-- All Scheduled Appointments -->
 <div class="mb-6">
     <h2 class="text-lg font-semibold text-gray-800 mb-4">All Scheduled Appointments</h2>
-    <div class="space-y-4">
+<div class="space-y-4">
         @forelse($schedule as $s)
-            <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
+        <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
                 <div class="flex justify-between items-start">
                     <div>
                         <h2 class="text-lg font-semibold">{{ $s->customer ?? 'Customer' }}</h2>
@@ -35,7 +35,7 @@
                         <p class="text-xs text-gray-500 mt-1">📅 {{ $s->date ?? 'Not set' }} • ⏰ {{ $s->time ?? 'Not set' }}</p>
                     </div>
                 </div>
-                <div class="mt-4">
+            <div class="mt-4">
                     <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">Mark Completed</button>
                 </div>
             </div>
@@ -44,7 +44,7 @@
                 <p class="text-gray-500 text-center">No scheduled appointments.</p>
             </div>
         @endforelse
-    </div>
+        </div>
 </div>
 
 <style>

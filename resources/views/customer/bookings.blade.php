@@ -31,45 +31,45 @@
 <!-- All Bookings -->
 <div class="mb-6">
     <h2 class="text-lg font-semibold text-gray-800 mb-4">All Bookings</h2>
-    <div class="space-y-4">
+        <div class="space-y-4">
         @forelse($bookings as $booking)
             <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
                 <div class="flex justify-between items-start mb-3">
-                    <div>
+                        <div>
                         <h2 class="text-lg font-semibold">
                             @if($booking->offering_type === 'product')
-                                {{ $booking->offering->name ?? 'Product' }}
+                                Product
                             @elseif($booking->offering_type === 'service')
-                                {{ $booking->offering->name ?? 'Service' }}
+                                Service
                             @else
-                                {{ $booking->offering->name ?? 'Business' }}
+                                Business
                             @endif
                         </h2>
                         <p class="text-gray-700">Provider: {{ $booking->provider->name ?? 'Unknown' }}</p>
                         <p class="text-xs text-gray-500 mt-1">Order #{{ $booking->id }}</p>
-                    </div>
-                    <span class="px-3 py-1 text-sm rounded-full 
+                        </div>
+                        <span class="px-3 py-1 text-sm rounded-full 
                         @if($booking->status === 'pending') bg-yellow-100 text-yellow-700
                         @elseif($booking->status === 'accepted') bg-blue-100 text-blue-700
                         @elseif($booking->status === 'completed') bg-green-100 text-green-700
                         @elseif($booking->status === 'declined') bg-red-100 text-red-700
                         @else bg-gray-100 text-gray-700 @endif">
                         {{ ucfirst($booking->status) }}
-                    </span>
-                </div>
-                
+                        </span>
+                    </div>
+
                 @if($booking->offering_type === 'product' && $booking->quantity > 1)
                     <p class="text-sm text-gray-600 mb-2">Quantity: {{ $booking->quantity }}</p>
                 @endif
                 
                 @if($booking->total_amount > 0)
                     <p class="text-sm font-medium text-green-600 mb-2">Amount: ₱{{ number_format($booking->total_amount, 2) }}</p>
-                @endif
-                
+                        @endif
+
                 @if($booking->notes)
                     <p class="text-sm text-gray-600 mb-2">Notes: {{ $booking->notes }}</p>
-                @endif
-                
+                        @endif
+
                 @if($booking->scheduled_date)
                     <p class="text-xs text-gray-500 mb-2">
                         📅 {{ $booking->scheduled_date->format('M d, Y') }}
@@ -82,12 +82,12 @@
                 <p class="text-xs text-gray-400">Booked on: {{ $booking->created_at->format('M d, Y g:i A') }}</p>
             </div>
         @empty
-            <div class="bg-white p-5 rounded shadow border">
-                <p class="text-gray-500 text-center">No bookings yet.</p>
-            </div>
-        @endforelse
+                <div class="bg-white p-5 rounded shadow border">
+                    <p class="text-gray-500 text-center">No bookings yet.</p>
+                </div>
+            @endforelse
     </div>
-</div>
+                    </div>
 
     <style>
         .calendar-container {
@@ -210,7 +210,7 @@
                     <div class="calendar-weekday">Thu</div>
                     <div class="calendar-weekday">Fri</div>
                     <div class="calendar-weekday">Sat</div>
-                </div>
+        </div>
                 <div class="calendar-days">
             `;
 
@@ -275,7 +275,7 @@
             }
 
             // Filter bookings for selected date
-            const dayBookings = bookingsData.filter(b => {
+                    const dayBookings = bookingsData.filter(b => {
                 const bookingDate = b.scheduled_date || b.date || b.created_at;
                 if (!bookingDate) return false;
                 const bookingDateObj = new Date(bookingDate);
@@ -288,7 +288,15 @@
                 bookingsEl.innerHTML = '<p class="text-gray-500 text-center py-4">No bookings for this date.</p>';
             } else {
                 bookingsEl.innerHTML = dayBookings.map(b => {
-                    const offeringName = b.offering?.name || b.item || b.name || 'Booking';
+                    // Use the category (offering type) as the headline instead of a generic "Booking"
+                    let offeringName = 'Booking';
+                    if (b.offering_type === 'product') {
+                        offeringName = 'Product';
+                    } else if (b.offering_type === 'service') {
+                        offeringName = 'Service';
+                    } else if (b.offering_type === 'business') {
+                        offeringName = 'Business';
+                    }
                     const providerName = b.provider?.name || b.provider || 'Provider';
                     const time = b.scheduled_time ? new Date('2000-01-01T' + b.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : (b.time || 'Time not set');
                     const status = b.status || 'pending';
@@ -302,7 +310,7 @@
                                     ${status.charAt(0).toUpperCase() + status.slice(1)}
                                 </span>
                             </p>
-                        </div>
+    </div>
                     `;
                 }).join('');
             }

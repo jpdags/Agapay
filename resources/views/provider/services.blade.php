@@ -52,9 +52,9 @@
 <!-- Products Tab -->
 <div id="content-products" class="tab-content">
     <h2 class="text-lg font-semibold text-gray-800 mb-4">My Products</h2>
-    <div class="space-y-4">
+<div class="space-y-4">
         @forelse($products ?? [] as $product)
-            <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
+        <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
                 <div class="flex justify-between items-start">
                     <div>
                         <h2 class="text-lg font-semibold">{{ $product->name }}</h2>
@@ -128,7 +128,7 @@
                         <p class="text-xs text-gray-600">Contact: {{ $business->contact }}</p>
                     </div>
                 </div>
-                <div class="mt-4 flex gap-2">
+            <div class="mt-4 flex gap-2">
                     <button data-type="business" data-id="{{ $business->id }}" onclick="openEditModal(this.dataset.type, parseInt(this.dataset.id))" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Edit</button>
                     <form action="{{ route('provider.offering.delete', ['type' => 'business', 'id' => $business->id]) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this business?');">
                         @csrf

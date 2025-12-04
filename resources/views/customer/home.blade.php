@@ -44,7 +44,7 @@
             <div class="space-y-4">
                 <div class="flex justify-between items-center">
                     <span class="text-gray-600">Total Orders</span>
-                    <span class="font-semibold">{{ $userStats['total_orders'] }}</span>
+                    <span class="font-semibold text-gray-800">{{ $userStats['total_orders'] }}</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-gray-600">Pending Orders</span>
@@ -62,15 +62,17 @@
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h3>
             <div class="space-y-3">
                 @forelse($recentActivities as $activity)
-                    <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <div class="w-2 h-2 mt-2 bg-dark-red rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-800">{{ $activity['message'] ?? $activity->message ?? 'Activity' }}</p>
-                            <p class="text-xs text-gray-500">{{ $activity['time'] ?? $activity->time ?? '' }}</p>
+                    <a href="{{ route('bookings') }}" class="block">
+                        <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer">
+                            <div class="w-2 h-2 mt-2 bg-dark-red rounded-full"></div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-800">{{ $activity['message'] ?? $activity->message ?? 'Activity' }}</p>
+                                <p class="text-xs text-gray-500">{{ $activity['time'] ?? $activity->time ?? '' }}</p>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 @empty
-                    <p class="text-gray-500 text-center py-4">No recent activities.</p>
+                    <p class="text-gray-500 text-center py-4">No recent activities. <a href="{{ route('categories') }}" class="text-dark-red hover:underline">Start browsing!</a></p>
                 @endforelse
             </div>
         </div>
@@ -83,17 +85,19 @@
         </div>
         <div class="space-y-3">
             @foreach($upcomingSchedules as $schedule)
-                <div class="flex items-start space-x-4 p-4 border rounded-lg hover:shadow-md transition">
-                    <span class="material-symbols-outlined text-3xl text-dark-red">event</span>
-                    <div class="flex-1">
-                        <h4 class="font-medium text-gray-800">{{ $schedule['title'] }}</h4>
-                        <p class="text-sm text-gray-600">{{ $schedule['description'] }}</p>
-                        <p class="text-xs text-gray-500 mt-1">📅 {{ $schedule['date'] }} • ⏰ {{ $schedule['time'] }}</p>
+                <a href="{{ route('bookings') }}" class="block">
+                    <div class="flex items-start space-x-4 p-4 border rounded-lg hover:shadow-md transition cursor-pointer">
+                        <span class="material-symbols-outlined text-3xl text-dark-red">event</span>
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-800">{{ $schedule['title'] }}</h4>
+                            <p class="text-sm text-gray-600">{{ $schedule['description'] }}</p>
+                            <p class="text-xs text-gray-500 mt-1">📅 {{ $schedule['date'] }} • ⏰ {{ $schedule['time'] }}</p>
+                        </div>
                     </div>
-                </div>
+                </a>
             @endforeach
             @if(count($upcomingSchedules) === 0)
-                <p class="text-gray-500 text-center py-4">No upcoming schedules.</p>
+                <p class="text-gray-500 text-center py-4">No upcoming schedules. <a href="{{ route('categories') }}" class="text-dark-red hover:underline">Book a service!</a></p>
             @endif
         </div>
     </div>
