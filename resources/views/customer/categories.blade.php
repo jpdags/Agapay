@@ -6,13 +6,13 @@
         <p class="text-gray-600 mb-6">Choose a category to explore barangay-offered services and goods</p>
 
         <!-- Category Options -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            <!-- PRODUCTS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+            <!-- PRODUCTS (now includes both products and entrepreneurship) -->
             <div onclick="selectCategory('products')" class="cursor-pointer bg-white shadow-md rounded-lg p-6 border hover:border-dark-red hover:shadow-lg transition group">
                 <span class="material-symbols-outlined text-5xl text-dark-red mb-4">inventory_2</span>
                 <h3 class="text-xl font-semibold text-gray-800 group-hover:text-dark-red">Products</h3>
-                <p class="text-sm text-gray-600 mt-1">Barangay-offered goods like LPG, water jugs, and essentials</p>
-                <p class="text-xs text-gray-500 mt-2">{{ count($products ?? []) }} available</p>
+                <p class="text-sm text-gray-600 mt-1">Barangay-offered goods, local businesses, and home-based products</p>
+                <p class="text-xs text-gray-500 mt-2">{{ count($allProducts ?? []) }} available</p>
             </div>
 
             <!-- SERVICES -->
@@ -21,14 +21,6 @@
                 <h3 class="text-xl font-semibold text-gray-800 group-hover:text-dark-red">Services</h3>
                 <p class="text-sm text-gray-600 mt-1">Skilled local labor: electricians, plumbers, carpenters, mechanics</p>
                 <p class="text-xs text-gray-500 mt-2">{{ count($services ?? []) }} available</p>
-            </div>
-
-            <!-- ENTREPRENEURSHIP -->
-            <div onclick="selectCategory('entrepreneurship')" class="cursor-pointer bg-white shadow-md rounded-lg p-6 border hover:border-dark-red hover:shadow-lg transition group">
-                <span class="material-symbols-outlined text-5xl text-dark-red mb-4">storefront</span>
-                <h3 class="text-xl font-semibold text-gray-800 group-hover:text-dark-red">Entrepreneurship</h3>
-                <p class="text-sm text-gray-600 mt-1">Home-based barangay businesses and food producers</p>
-                <p class="text-xs text-gray-500 mt-2">{{ count($businesses ?? []) }} available</p>
             </div>
         </div>
 
@@ -40,15 +32,13 @@
     </div>
 
     <!-- Hidden data elements for JavaScript -->
-    <script type="application/json" id="products-data">{!! json_encode($products ?? []) !!}</script>
+    <script type="application/json" id="products-data">{!! json_encode($allProducts ?? []) !!}</script>
     <script type="application/json" id="services-data">{!! json_encode($services ?? []) !!}</script>
-    <script type="application/json" id="businesses-data">{!! json_encode($businesses ?? []) !!}</script>
 
     <script>
         // Pass PHP data to JavaScript
         const productsData = JSON.parse(document.getElementById('products-data').textContent);
         const servicesData = JSON.parse(document.getElementById('services-data').textContent);
-        const businessesData = JSON.parse(document.getElementById('businesses-data').textContent);
 
         function selectCategory(type) {
             const display = document.getElementById('categoryDisplay');
@@ -70,11 +60,6 @@
                 data = servicesData;
             }
 
-            if (type === 'entrepreneurship') {
-                titleText = "Support Local Businesses";
-                data = businessesData;
-            }
-
             title.innerText = titleText;
 
             // Render items or show "no data" message
@@ -83,7 +68,106 @@
             } else {
                 items.innerHTML = data.map(item => {
                     if (type === 'products') {
+                        // Check if it's a business type or regular product
+                        if (item.type === 'business' || item.category) {
+                            // It's a business/entrepreneurship
+                            const avgRating = item.average_rating || 0;
+                            const totalReviews = item.total_reviews || 0;
+                            const reviews = item.reviews || [];
+                            const reviewsId = `reviews-business-${item.id}`;
+                            const reviewsToggleId = `toggle-reviews-${item.id}`;
+                            
+                            let ratingStars = '';
+                            for (let i = 1; i <= 5; i++) {
+                                ratingStars += `<span class="text-xl ${i <= avgRating ? 'text-yellow-400' : 'text-gray-300'}">★</span>`;
+                            }
+                            
+                            let reviewsHtml = '';
+                            if (reviews.length > 0) {
+                                reviewsHtml = `
+                                    <div id="${reviewsId}" class="hidden mt-3 space-y-2 border-t pt-3">
+                                        ${reviews.map(review => {
+                                            let reviewStars = '';
+                                            for (let i = 1; i <= 5; i++) {
+                                                reviewStars += `<span class="text-sm ${i <= review.rating ? 'text-yellow-400' : 'text-gray-300'}">★</span>`;
+                                            }
+                                            return `
+                                                <div class="bg-gray-50 p-2 rounded text-xs">
+                                                    <div class="flex justify-between items-center mb-1">
+                                                        <span class="font-semibold text-gray-800">${review.customer?.name || 'Customer'}</span>
+                                                        <div class="flex items-center">
+                                                            ${reviewStars}
+                                                            <span class="ml-1 text-gray-600">(${review.rating}/5)</span>
+                                                        </div>
+                                                    </div>
+                                                    ${review.comment ? `<p class="text-gray-700 mt-1">${review.comment}</p>` : ''}
+                                                    <p class="text-gray-500 text-xs mt-1">${new Date(review.created_at).toLocaleDateString()}</p>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `;
+                            }
+                            
+                            return `
+                                <div class="p-4 border rounded-lg hover:shadow-md transition">
+                                    <h3 class="text-lg font-semibold text-dark-red">${item.name}</h3>
+                                    <p class="text-sm text-gray-700">${item.description || ''}</p>
+                                    <p class="text-xs text-gray-600 mt-1">Category: ${item.category || 'N/A'}</p>
+                                    <p class="text-xs text-gray-600">Contact: ${item.contact || 'N/A'}</p>
+                                    ${item.user ? `<p class="text-xs text-gray-500 mt-1">Owner: ${item.user.name}</p>` : ''}
+                                    ${totalReviews > 0 ? `
+                                        <div class="mt-2 flex items-center gap-2">
+                                            <div class="flex items-center">${ratingStars}</div>
+                                            <span class="text-sm text-gray-600">(${avgRating.toFixed(1)}/5 - ${totalReviews} ${totalReviews === 1 ? 'review' : 'reviews'})</span>
+                                        </div>
+                                        <button onclick="toggleItemReviews('${reviewsId}', '${reviewsToggleId}')" id="${reviewsToggleId}" class="mt-2 text-xs text-blue-600 hover:text-blue-800">Show Reviews</button>
+                                        ${reviewsHtml}
+                                    ` : '<p class="text-xs text-gray-500 mt-2">No reviews yet</p>'}
+                                    <button onclick="openBookingModal('business', ${item.id}, ${item.user?.id || 0}, '${item.name}')" class="mt-3 w-full bg-dark-red text-white px-4 py-2 rounded hover:bg-red-800 transition">Contact/Inquire</button>
+                                </div>
+                            `;
+                        } else {
+                            // It's a regular product
                         const totalPrice = parseFloat(item.price) + (parseFloat(item.delivery_fee) || 0);
+                            const avgRating = item.average_rating || 0;
+                            const totalReviews = item.total_reviews || 0;
+                            const reviews = item.reviews || [];
+                            const reviewsId = `reviews-product-${item.id}`;
+                            const reviewsToggleId = `toggle-reviews-${item.id}`;
+                            
+                            let ratingStars = '';
+                            for (let i = 1; i <= 5; i++) {
+                                ratingStars += `<span class="text-xl ${i <= avgRating ? 'text-yellow-400' : 'text-gray-300'}">★</span>`;
+                            }
+                            
+                            let reviewsHtml = '';
+                            if (reviews.length > 0) {
+                                reviewsHtml = `
+                                    <div id="${reviewsId}" class="hidden mt-3 space-y-2 border-t pt-3">
+                                        ${reviews.map(review => {
+                                            let reviewStars = '';
+                                            for (let i = 1; i <= 5; i++) {
+                                                reviewStars += `<span class="text-sm ${i <= review.rating ? 'text-yellow-400' : 'text-gray-300'}">★</span>`;
+                                            }
+                                            return `
+                                                <div class="bg-gray-50 p-2 rounded text-xs">
+                                                    <div class="flex justify-between items-center mb-1">
+                                                        <span class="font-semibold text-gray-800">${review.customer?.name || 'Customer'}</span>
+                                                        <div class="flex items-center">
+                                                            ${reviewStars}
+                                                            <span class="ml-1 text-gray-600">(${review.rating}/5)</span>
+                                                        </div>
+                                                    </div>
+                                                    ${review.comment ? `<p class="text-gray-700 mt-1">${review.comment}</p>` : ''}
+                                                    <p class="text-gray-500 text-xs mt-1">${new Date(review.created_at).toLocaleDateString()}</p>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `;
+                            }
+                            
                         return `
                             <div class="p-4 border rounded-lg hover:shadow-md transition">
                                 <h3 class="text-lg font-semibold text-dark-red">${item.name}</h3>
@@ -92,28 +176,72 @@
                                 ${item.delivery_fee ? `<p class="text-xs text-gray-500">Delivery Fee: ₱${parseFloat(item.delivery_fee).toFixed(2)}</p>` : ''}
                                 <p class="text-sm font-semibold text-gray-800 mt-1">Total: ₱${totalPrice.toFixed(2)}</p>
                                 ${item.user ? `<p class="text-xs text-gray-500 mt-1">Provider: ${item.user.name}</p>` : ''}
+                                    ${totalReviews > 0 ? `
+                                        <div class="mt-2 flex items-center gap-2">
+                                            <div class="flex items-center">${ratingStars}</div>
+                                            <span class="text-sm text-gray-600">(${avgRating.toFixed(1)}/5 - ${totalReviews} ${totalReviews === 1 ? 'review' : 'reviews'})</span>
+                                        </div>
+                                        <button onclick="toggleItemReviews('${reviewsId}', '${reviewsToggleId}')" id="${reviewsToggleId}" class="mt-2 text-xs text-blue-600 hover:text-blue-800">Show Reviews</button>
+                                        ${reviewsHtml}
+                                    ` : '<p class="text-xs text-gray-500 mt-2">No reviews yet</p>'}
                                 <button onclick="openBookingModal('product', ${item.id}, ${item.user?.id || 0}, '${item.name}', ${item.price}, ${item.delivery_fee || 0})" class="mt-3 w-full bg-dark-red text-white px-4 py-2 rounded hover:bg-red-800 transition">Book Now</button>
                             </div>
                         `;
+                        }
                     } else if (type === 'services') {
+                        const avgRating = item.average_rating || 0;
+                        const totalReviews = item.total_reviews || 0;
+                        const reviews = item.reviews || [];
+                        const reviewsId = `reviews-service-${item.id}`;
+                        const reviewsToggleId = `toggle-reviews-${item.id}`;
+                        
+                        let ratingStars = '';
+                        for (let i = 1; i <= 5; i++) {
+                            ratingStars += `<span class="text-xl ${i <= avgRating ? 'text-yellow-400' : 'text-gray-300'}">★</span>`;
+                        }
+                        
+                        let reviewsHtml = '';
+                        if (reviews.length > 0) {
+                            reviewsHtml = `
+                                <div id="${reviewsId}" class="hidden mt-3 space-y-2 border-t pt-3">
+                                    ${reviews.map(review => {
+                                        let reviewStars = '';
+                                        for (let i = 1; i <= 5; i++) {
+                                            reviewStars += `<span class="text-sm ${i <= review.rating ? 'text-yellow-400' : 'text-gray-300'}">★</span>`;
+                                        }
+                                        return `
+                                            <div class="bg-gray-50 p-2 rounded text-xs">
+                                                <div class="flex justify-between items-center mb-1">
+                                                    <span class="font-semibold text-gray-800">${review.customer?.name || 'Customer'}</span>
+                                                    <div class="flex items-center">
+                                                        ${reviewStars}
+                                                        <span class="ml-1 text-gray-600">(${review.rating}/5)</span>
+                                                    </div>
+                                                </div>
+                                                ${review.comment ? `<p class="text-gray-700 mt-1">${review.comment}</p>` : ''}
+                                                <p class="text-gray-500 text-xs mt-1">${new Date(review.created_at).toLocaleDateString()}</p>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `;
+                        }
+                        
                         return `
                             <div class="p-4 border rounded-lg hover:shadow-md transition">
                                 <h3 class="text-lg font-semibold text-dark-red">${item.name}</h3>
                                 <p class="text-sm text-gray-700">${item.description || ''}</p>
                                 <p class="text-sm font-medium text-green-600 mt-2">Rate: ₱${parseFloat(item.rate).toFixed(2)}</p>
                                 ${item.user ? `<p class="text-xs text-gray-500 mt-1">Provider: ${item.user.name}</p>` : ''}
+                                ${totalReviews > 0 ? `
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <div class="flex items-center">${ratingStars}</div>
+                                        <span class="text-sm text-gray-600">(${avgRating.toFixed(1)}/5 - ${totalReviews} ${totalReviews === 1 ? 'review' : 'reviews'})</span>
+                                    </div>
+                                    <button onclick="toggleItemReviews('${reviewsId}', '${reviewsToggleId}')" id="${reviewsToggleId}" class="mt-2 text-xs text-blue-600 hover:text-blue-800">Show Reviews</button>
+                                    ${reviewsHtml}
+                                ` : '<p class="text-xs text-gray-500 mt-2">No reviews yet</p>'}
                                 <button onclick="openBookingModal('service', ${item.id}, ${item.user?.id || 0}, '${item.name}', ${item.rate})" class="mt-3 w-full bg-dark-red text-white px-4 py-2 rounded hover:bg-red-800 transition">Book Service</button>
-                            </div>
-                        `;
-                    } else if (type === 'entrepreneurship') {
-                        return `
-                <div class="p-4 border rounded-lg hover:shadow-md transition">
-                    <h3 class="text-lg font-semibold text-dark-red">${item.name}</h3>
-                                <p class="text-sm text-gray-700">${item.description || ''}</p>
-                                <p class="text-xs text-gray-600 mt-1">Category: ${item.category || 'N/A'}</p>
-                                <p class="text-xs text-gray-600">Contact: ${item.contact || 'N/A'}</p>
-                                ${item.user ? `<p class="text-xs text-gray-500 mt-1">Owner: ${item.user.name}</p>` : ''}
-                                <button onclick="openBookingModal('business', ${item.id}, ${item.user?.id || 0}, '${item.name}')" class="mt-3 w-full bg-dark-red text-white px-4 py-2 rounded hover:bg-red-800 transition">Contact/Inquire</button>
                 </div>
                         `;
                     }
@@ -126,7 +254,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const category = urlParams.get('category');
             
-            if (category && ['products', 'services', 'entrepreneurship'].includes(category)) {
+            if (category && ['products', 'services'].includes(category)) {
                 selectCategory(category);
                 // Scroll to the category display
                 setTimeout(() => {
@@ -177,6 +305,19 @@
         function closeBookingModal() {
             document.getElementById('bookingModal').classList.add('hidden');
             document.getElementById('bookingForm').reset();
+        }
+        
+        function toggleItemReviews(reviewsId, toggleId) {
+            const reviewsEl = document.getElementById(reviewsId);
+            const toggleBtn = document.getElementById(toggleId);
+            
+            if (reviewsEl.classList.contains('hidden')) {
+                reviewsEl.classList.remove('hidden');
+                toggleBtn.textContent = 'Hide Reviews';
+            } else {
+                reviewsEl.classList.add('hidden');
+                toggleBtn.textContent = 'Show Reviews';
+            }
         }
     </script>
 

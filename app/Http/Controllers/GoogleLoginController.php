@@ -26,6 +26,9 @@ class GoogleLoginController extends Controller
         $caBundle = ini_get('curl.cainfo');
         if ($caBundle && file_exists($caBundle)) {
             $options['verify'] = $caBundle;
+        } elseif (file_exists('C:\Program Files\php-8.4.15\extras\ssl\cacert.pem')) {
+            // Try the actual PHP installation location
+            $options['verify'] = 'C:\Program Files\php-8.4.15\extras\ssl\cacert.pem';
         } elseif (file_exists('C:\php\extras\ssl\cacert.pem')) {
             // Try the default Windows PHP location
             $options['verify'] = 'C:\php\extras\ssl\cacert.pem';
@@ -52,15 +55,25 @@ class GoogleLoginController extends Controller
         
         // Use stateless() to match the callback method
         // This prevents "invalid state" errors
-        // Configure HTTP client with proper SSL handling
         try {
-            return Socialite::driver('google')
-                ->setHttpClient($this->getHttpClient())
-                ->stateless()
-                ->redirect();
+            /** @var \Laravel\Socialite\Two\GoogleProvider $provider */
+            $provider = Socialite::driver('google');
+            return $provider->stateless()->redirect();
         } catch (\Exception $e) {
-            Log::error('Google redirect failed', ['error' => $e->getMessage()]);
-            return redirect('/login')->with('error', 'Failed to initiate Google login. Please try again.');
+            Log::error('Google redirect failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Provide helpful error message
+            $errorMessage = 'Failed to initiate Google login. ';
+            if (str_contains($e->getMessage(), 'cURL error 77') || str_contains($e->getMessage(), 'certificate')) {
+                $errorMessage .= 'SSL certificate issue. Please ensure your php.ini has: curl.cainfo = "C:\\Program Files\\php-8.4.15\\extras\\ssl\\cacert.pem"';
+            } else {
+                $errorMessage .= $e->getMessage();
+            }
+            
+            return redirect('/login')->with('error', $errorMessage);
         }
     }
 
@@ -72,29 +85,47 @@ class GoogleLoginController extends Controller
             // Get the user from Google
             // Using stateless() helps avoid "invalid state" issues that can
             // silently send the user back to the login/signup page.
-            // Configure HTTP client with proper SSL handling
-            $googleUser = Socialite::driver('google')
-                ->setHttpClient($this->getHttpClient())
-                ->stateless()
-                ->user();
+            /** @var \Laravel\Socialite\Two\GoogleProvider $provider */
+            $provider = Socialite::driver('google');
+            $googleUser = $provider->stateless()->user();
             Log::info('Google user data received', ['email' => $googleUser->getEmail()]);
             
             // Check if the user exists in the database by their email
             $user = User::where('email', $googleUser->getEmail())->first();
             
+            // Check if this was triggered from manual login attempt
+            $autoLoginEmail = $request->session()->get('auto_login_email');
+            $autoLoginRemember = $request->session()->get('auto_login_remember', false);
+            
             // If user exists, log them in and redirect to their dashboard
             if ($user) {
                 Log::info('Existing user found: ' . $user->email);
+                
+                // Verify email matches if this was from auto-login redirect
+                if ($autoLoginEmail && $autoLoginEmail !== $googleUser->getEmail()) {
+                    // Email doesn't match, clear session and show error
+                    $request->session()->forget('auto_login_email');
+                    $request->session()->forget('auto_login_remember');
+                    return redirect('/login')->with('error', 'Email mismatch. Please use the correct Google account.');
+                }
                 
                 // Update Google ID if not set
                 if (!$user->google_id) {
                     $user->update(['google_id' => $googleUser->getId()]);
                 }
                 
+                // Use remember me preference from manual login if available
+                $rememberMe = $autoLoginRemember;
+                
+                // Clear auto-login session data
+                $request->session()->forget('auto_login_email');
+                $request->session()->forget('auto_login_remember');
+                
                 // Log the user in
-                Auth::login($user);
+                Auth::login($user, $rememberMe);
                 $request->session()->regenerate();
-                Log::info('User logged in successfully');
+                
+                Log::info('User logged in successfully via Google OAuth' . ($autoLoginEmail ? ' (auto-redirected from manual login)' : ''));
                 
                 // Redirect based on the user's existing type
                 if ($user->user_type === 0) {
@@ -102,6 +133,10 @@ class GoogleLoginController extends Controller
                 }
                 return redirect()->route('home');
             }
+            
+            // Clear auto-login session if user doesn't exist
+            $request->session()->forget('auto_login_email');
+            $request->session()->forget('auto_login_remember');
             
             // New user - store Google user data in session and show role selection
             Log::info('New user, redirecting to role selection');
@@ -175,7 +210,16 @@ class GoogleLoginController extends Controller
 
             Log::info('New user created via Google OAuth', [
                 'email' => $user->email,
-                'user_type' => $userType
+                'user_type' => $userType,
+                'google_id' => $user->google_id
+            ]);
+
+            // Send email verification notification about Google ID
+            // In a real application, you would send an email here
+            // For now, we'll just log it
+            Log::info('Email verification: Google account linked', [
+                'email' => $user->email,
+                'google_id' => $user->google_id
             ]);
 
             // Clear the session data
@@ -185,11 +229,14 @@ class GoogleLoginController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
+            // Show warning about completing profile
+            $warning = 'Please complete your profile information (phone and address) in settings to verify your account.';
+
             // Redirect based on selected role
             if ($userType === 0) {
-                return redirect()->route('dashboard.provider');
+                return redirect()->route('dashboard.provider')->with('warning', $warning);
             }
-            return redirect()->route('home');
+            return redirect()->route('home')->with('warning', $warning);
 
         } catch (\Exception $e) {
             Log::error('Failed to create user: ' . $e->getMessage());

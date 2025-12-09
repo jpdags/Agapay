@@ -57,7 +57,7 @@
         <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h2 class="text-lg font-semibold">{{ $product->name }}</h2>
+                        <h2 class="text-lg font-semibold text-gray-800">{{ $product->name }}</h2>
                         @if($product->brand)
                             <p class="text-sm text-gray-600">Brand: {{ $product->brand }}</p>
                         @endif
@@ -92,7 +92,7 @@
             <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h2 class="text-lg font-semibold">{{ $service->name }}</h2>
+                        <h2 class="text-lg font-semibold text-gray-800">{{ $service->name }}</h2>
                         <p class="text-sm text-gray-700">{{ $service->description }}</p>
                         <p class="text-green-600 font-medium mt-1">Rate: ₱{{ number_format($service->rate, 2) }}</p>
                     </div>
@@ -122,7 +122,7 @@
             <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h2 class="text-lg font-semibold">{{ $business->name }}</h2>
+                        <h2 class="text-lg font-semibold text-gray-800">{{ $business->name }}</h2>
                         <p class="text-sm text-gray-700">{{ $business->description }}</p>
                         <p class="text-xs text-gray-600 mt-1">Category: {{ $business->category }}</p>
                         <p class="text-xs text-gray-600">Contact: {{ $business->contact }}</p>

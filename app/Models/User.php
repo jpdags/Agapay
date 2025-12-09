@@ -26,6 +26,8 @@ class User extends Authenticatable
         'password',
         'user_type',
         'google_id',
+        'google_calendar_token',
+        'notifications_enabled',
         'suki_points',
         'phone',
         'address',
@@ -101,5 +103,29 @@ class User extends Authenticatable
     {
         $this->suki_points = $this->calculateSukiPoints();
         $this->save();
+    }
+
+    // Calculate average rating from completed orders as a provider
+    public function getAverageRating()
+    {
+        $completedOrders = $this->ordersAsProvider()
+            ->where('status', 'completed')
+            ->whereNotNull('rating')
+            ->get();
+        
+        if ($completedOrders->isEmpty()) {
+            return null;
+        }
+        
+        return round($completedOrders->avg('rating'), 2);
+    }
+
+    // Get total number of ratings
+    public function getTotalRatings()
+    {
+        return $this->ordersAsProvider()
+            ->where('status', 'completed')
+            ->whereNotNull('rating')
+            ->count();
     }
 }

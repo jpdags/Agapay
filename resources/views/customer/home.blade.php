@@ -8,7 +8,20 @@
             <p class="text-gray-600">Browse and Explore</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @if(session('warning'))
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                <p class="font-semibold">⚠️ Important:</p>
+                <p>{{ session('warning') }}</p>
+            </div>
+        @endif
+
+        @if(session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Products -->
             <a href="{{ route('categories') }}?category=products" class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition block">
                 <span class="material-symbols-outlined text-4xl text-dark-red mb-3">inventory_2</span>
@@ -23,14 +36,6 @@
                 <h4 class="font-semibold text-gray-800">Services</h4>
                 <p class="text-sm text-gray-600 mt-1">Find local helpers & service providers</p>
                 <span class="text-blue-500 hover:text-blue-700 inline-block mt-2">Explore Services →</span>
-            </a>
-
-            <!-- Entrepreneurship -->
-            <a href="{{ route('categories') }}?category=entrepreneurship" class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition block">
-                <span class="material-symbols-outlined text-4xl text-dark-red mb-3">trending_up</span>
-                <h4 class="font-semibold text-gray-800">Entrepreneurship</h4>
-                <p class="text-sm text-gray-600 mt-1">Start and grow your barangay business</p>
-                <span class="text-blue-500 hover:text-blue-700 inline-block mt-2">Explore Entrepreneurship →</span>
             </a>
         </div>
     </div>

@@ -9,7 +9,21 @@
     
     <!-- Calendar Section -->
     <div class="bg-white rounded-lg shadow border p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">Bookings Calendar</h2>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-gray-800">Bookings Calendar</h2>
+            <div class="flex gap-2">
+                @if(Auth::user()->google_calendar_token)
+                    <button onclick="syncToGoogleCalendar()" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                        Sync to Google
+                    </button>
+                    <span class="px-3 py-1 text-sm bg-green-100 text-green-700 rounded">✓ Connected</span>
+                @else
+                    <a href="{{ route('google.calendar.redirect') }}" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                        Connect Google Calendar
+                    </a>
+                @endif
+            </div>
+        </div>
         <div id="calendar" class="calendar-container"></div>
     </div>
 
@@ -28,6 +42,13 @@
     </div>
 @endif
 
+@if(session('warning'))
+    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+        <p class="font-semibold">⚠️ Important:</p>
+        <p>{{ session('warning') }}</p>
+    </div>
+@endif
+
 <!-- All Bookings -->
 <div class="mb-6">
     <h2 class="text-lg font-semibold text-gray-800 mb-4">All Bookings</h2>
@@ -36,7 +57,7 @@
             <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
                 <div class="flex justify-between items-start mb-3">
                         <div>
-                        <h2 class="text-lg font-semibold">
+                        <h2 class="text-lg font-semibold text-gray-800">
                             @if($booking->offering_type === 'product')
                                 Product
                             @elseif($booking->offering_type === 'service')
@@ -80,6 +101,108 @@
                 @endif
                 
                 <p class="text-xs text-gray-400">Booked on: {{ $booking->created_at->format('M d, Y g:i A') }}</p>
+
+                @if($booking->status === 'accepted' || $booking->status === 'completed')
+                    @if($booking->scheduled_date && Auth::user()->google_calendar_token)
+                        <div class="mt-2">
+                            <button data-booking-id="{{ $booking->id }}" class="sync-booking-btn px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                                📅 Add to Google Calendar
+                            </button>
+                        </div>
+                    @endif
+                @endif
+
+                @if($booking->status === 'completed')
+                    @if($booking->rating)
+                        <div class="mt-4 p-3 bg-gray-50 rounded">
+                            <p class="text-sm font-semibold text-gray-800 mb-1">Your Rating:</p>
+                            <div class="flex items-center mb-2">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <span class="text-2xl {{ $i <= $booking->rating ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                                @endfor
+                                <span class="ml-2 text-sm text-gray-600">({{ $booking->rating }}/5)</span>
+                            </div>
+                            @if($booking->comment)
+                                <p class="text-sm text-gray-700"><strong>Comment:</strong> {{ $booking->comment }}</p>
+                            @endif
+                        </div>
+                    @else
+                        <div class="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
+                            <p class="text-sm font-semibold text-blue-800 mb-3">Rate this service:</p>
+                            <form action="{{ route('order.rate', $booking->id) }}" method="POST">
+                                @csrf
+                                <div class="mb-3">
+                                    <label class="block text-sm text-gray-700 mb-2">Rating (1-5 stars):</label>
+                                    <div class="flex items-center space-x-2" id="rating-stars-{{ $booking->id }}">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="rating" value="{{ $i }}" required class="hidden star-rating" data-booking-id="{{ $booking->id }}">
+                                                <span class="text-3xl star-icon text-gray-300 hover:text-yellow-300 transition" data-rating="{{ $i }}">★</span>
+                                            </label>
+                                        @endfor
+                                    </div>
+                                    <input type="hidden" name="selected_rating" id="selected_rating_{{ $booking->id }}" value="">
+                                </div>
+                                <script>
+                                    (function() {
+                                        const bookingId = {{ $booking->id }};
+                                        const stars = document.querySelectorAll('#rating-stars-' + bookingId + ' .star-icon');
+                                        const radios = document.querySelectorAll('#rating-stars-' + bookingId + ' input[type="radio"]');
+                                        
+                                        stars.forEach((star, index) => {
+                                            star.addEventListener('click', function() {
+                                                const rating = parseInt(this.getAttribute('data-rating'));
+                                                document.getElementById('selected_rating_' + bookingId).value = rating;
+                                                
+                                                // Update star colors
+                                                stars.forEach((s, i) => {
+                                                    if (i < rating) {
+                                                        s.classList.remove('text-gray-300');
+                                                        s.classList.add('text-yellow-400');
+                                                    } else {
+                                                        s.classList.remove('text-yellow-400');
+                                                        s.classList.add('text-gray-300');
+                                                    }
+                                                });
+                                                
+                                                // Check the corresponding radio button
+                                                radios[index].checked = true;
+                                            });
+                                            
+                                            star.addEventListener('mouseenter', function() {
+                                                const rating = parseInt(this.getAttribute('data-rating'));
+                                                stars.forEach((s, i) => {
+                                                    if (i < rating) {
+                                                        s.classList.add('text-yellow-300');
+                                                    }
+                                                });
+                                            });
+                                            
+                                            star.addEventListener('mouseleave', function() {
+                                                const selectedRating = parseInt(document.getElementById('selected_rating_' + bookingId).value || '0');
+                                                stars.forEach((s, i) => {
+                                                    s.classList.remove('text-yellow-300');
+                                                    if (i < selectedRating) {
+                                                        s.classList.add('text-yellow-400');
+                                                    }
+                                                });
+                                            });
+                                        });
+                                    })();
+                                </script>
+                                <div class="mb-3">
+                                    <label for="comment_{{ $booking->id }}" class="block text-sm text-gray-700 mb-1">Comment (optional):</label>
+                                    <textarea id="comment_{{ $booking->id }}" name="comment" rows="3" 
+                                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red"
+                                        placeholder="Share your experience..."></textarea>
+                                </div>
+                                <button type="submit" class="px-4 py-2 bg-dark-red text-white rounded hover:bg-red-800 transition text-sm">
+                                    Submit Rating
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+                @endif
             </div>
         @empty
                 <div class="bg-white p-5 rounded shadow border">
@@ -143,6 +266,9 @@
             cursor: pointer;
             font-size: 0.875rem;
             transition: all 0.2s;
+            color: #1F2937;
+            background: #FFFFFF;
+            min-height: 40px;
         }
         .calendar-day:hover {
             background: #FEE2E2;
@@ -174,6 +300,9 @@
 
     <!-- Hidden data element for JavaScript -->
     <script type="application/json" id="bookings-data">{!! json_encode($bookings ?? []) !!}</script>
+    @if(Auth::user()->google_calendar_token)
+    <script type="application/json" id="calendar-events-url">{!! json_encode(route('calendar.events')) !!}</script>
+    @endif
 
     <script>
         // Calendar functionality
@@ -333,5 +462,77 @@
                 }
             }, 100);
         });
+
+        // Google Calendar integration
+        function syncBookingToCalendar(orderId) {
+            fetch(`/calendar/sync/${orderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✓ ' + data.message);
+                } else {
+                    alert('✗ ' + (data.error || 'Failed to sync to Google Calendar'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('✗ Failed to sync to Google Calendar');
+            });
+        }
+
+        // Handle sync booking buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.sync-booking-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookingId = this.getAttribute('data-booking-id');
+                    syncBookingToCalendar(bookingId);
+                });
+            });
+        });
+
+        function syncToGoogleCalendar() {
+            // Get all accepted/completed bookings with scheduled dates
+            const bookingsToSync = bookingsData.filter(b => 
+                (b.status === 'accepted' || b.status === 'completed') && b.scheduled_date
+            );
+            
+            if (bookingsToSync.length === 0) {
+                alert('No bookings to sync. Make sure you have accepted or completed bookings with scheduled dates.');
+                return;
+            }
+
+            let synced = 0;
+            let failed = 0;
+
+            bookingsToSync.forEach(booking => {
+                syncBookingToCalendar(booking.id);
+            });
+        }
+
+        // Load Google Calendar events on page load
+        (function() {
+            const eventsUrlElement = document.getElementById('calendar-events-url');
+            if (eventsUrlElement) {
+                const eventsUrl = JSON.parse(eventsUrlElement.textContent);
+                fetch(eventsUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.events && data.events.length > 0) {
+                            // Merge Google Calendar events with bookings
+                            // You can enhance this to show Google Calendar events on the calendar
+                            console.log('Google Calendar events loaded:', data.events);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading Google Calendar events:', error);
+                    });
+            }
+        })();
     </script>
 @endsection

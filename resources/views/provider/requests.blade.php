@@ -15,7 +15,7 @@
         <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
             <div class="flex justify-between items-start mb-3">
                 <div>
-                    <h2 class="text-lg font-semibold">{{ $order->customer->name ?? 'Customer' }}</h2>
+                    <h2 class="text-lg font-semibold text-gray-800">{{ $order->customer->name ?? 'Customer' }}</h2>
                     <p class="text-sm text-gray-600">Order #{{ $order->id }}</p>
                 </div>
                 <span class="px-3 py-1 text-sm rounded-full 

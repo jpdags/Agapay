@@ -20,6 +20,8 @@ class Order extends Model
         'scheduled_time',
         'total_amount',
         'quantity',
+        'rating',
+        'comment',
     ];
 
     protected $casts = [
