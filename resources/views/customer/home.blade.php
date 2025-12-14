@@ -1,0 +1,110 @@
+@extends('layouts.customer-main')
+
+@section('content')
+    <div class="mb-8">
+
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-dark-red">Home</h1>
+            <p class="text-gray-600">Browse and Explore</p>
+        </div>
+
+        @if(session('warning'))
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                <p class="font-semibold">⚠️ Important:</p>
+                <p>{{ session('warning') }}</p>
+            </div>
+        @endif
+
+        @if(session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Products -->
+            <a href="{{ route('categories') }}?category=products" class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition block">
+                <span class="material-symbols-outlined text-4xl text-dark-red mb-3">inventory_2</span>
+                <h4 class="font-semibold text-gray-800">Products</h4>
+                <p class="text-sm text-gray-600 mt-1">Browse barangay-made goods</p>
+                <span class="text-blue-500 hover:text-blue-700 inline-block mt-2">Explore Products →</span>
+            </a>
+
+            <!-- Services -->
+            <a href="{{ route('categories') }}?category=services" class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition block">
+                <span class="material-symbols-outlined text-4xl text-dark-red mb-3">handyman</span>
+                <h4 class="font-semibold text-gray-800">Services</h4>
+                <p class="text-sm text-gray-600 mt-1">Find local helpers & service providers</p>
+                <span class="text-blue-500 hover:text-blue-700 inline-block mt-2">Explore Services →</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats + Activities -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+        <!-- Stats -->
+        <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">My Stats</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Total Orders</span>
+                    <span class="font-semibold text-gray-800">{{ $userStats['total_orders'] }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Pending Orders</span>
+                    <span class="font-semibold text-orange-500">{{ $userStats['pending_orders'] }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Completed Orders</span>
+                    <span class="font-semibold text-green-500">{{ $userStats['completed_orders'] }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h3>
+            <div class="space-y-3">
+                @forelse($recentActivities as $activity)
+                    <a href="{{ route('bookings') }}" class="block">
+                        <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer">
+                            <div class="w-2 h-2 mt-2 bg-dark-red rounded-full"></div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-800">{{ $activity['message'] ?? $activity->message ?? 'Activity' }}</p>
+                                <p class="text-xs text-gray-500">{{ $activity['time'] ?? $activity->time ?? '' }}</p>
+                            </div>
+                        </div>
+                    </a>
+                @empty
+                    <p class="text-gray-500 text-center py-4">No recent activities. <a href="{{ route('categories') }}" class="text-dark-red hover:underline">Start browsing!</a></p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Schedules -->
+    <div class="bg-white p-6 rounded-lg shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">Upcoming Schedules</h3>
+        </div>
+        <div class="space-y-3">
+            @foreach($upcomingSchedules as $schedule)
+                <a href="{{ route('bookings') }}" class="block">
+                    <div class="flex items-start space-x-4 p-4 border rounded-lg hover:shadow-md transition cursor-pointer">
+                        <span class="material-symbols-outlined text-3xl text-dark-red">event</span>
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-800">{{ $schedule['title'] }}</h4>
+                            <p class="text-sm text-gray-600">{{ $schedule['description'] }}</p>
+                            <p class="text-xs text-gray-500 mt-1">📅 {{ $schedule['date'] }} • ⏰ {{ $schedule['time'] }}</p>
+                        </div>
+                    </div>
+                </a>
+            @endforeach
+            @if(count($upcomingSchedules) === 0)
+                <p class="text-gray-500 text-center py-4">No upcoming schedules. <a href="{{ route('categories') }}" class="text-dark-red hover:underline">Book a service!</a></p>
+            @endif
+        </div>
+    </div>
+
+@endsection
