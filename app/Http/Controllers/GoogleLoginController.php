@@ -8,43 +8,9 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use GuzzleHttp\Client;
 
 class GoogleLoginController extends Controller
 {
-    /**
-     * Get HTTP client with proper SSL configuration
-     */
-    private function getHttpClient()
-    {
-        $options = [
-            'verify' => true, // Enable SSL verification
-        ];
-        
-        // Try to use system certificate store on Windows
-        // If php.ini has curl.cainfo set, use that
-        $caBundle = ini_get('curl.cainfo');
-        if ($caBundle && file_exists($caBundle)) {
-            $options['verify'] = $caBundle;
-        } elseif (file_exists('C:\Program Files\php-8.4.15\extras\ssl\cacert.pem')) {
-            // Try the actual PHP installation location
-            $options['verify'] = 'C:\Program Files\php-8.4.15\extras\ssl\cacert.pem';
-        } elseif (file_exists('C:\php\extras\ssl\cacert.pem')) {
-            // Try the default Windows PHP location
-            $options['verify'] = 'C:\php\extras\ssl\cacert.pem';
-        } else {
-            // For development: disable SSL verification (NOT recommended for production)
-            // In production, you should download cacert.pem from https://curl.se/ca/cacert.pem
-            // and set it in php.ini: curl.cainfo = "C:\path\to\cacert.pem"
-            if (config('app.debug')) {
-                $options['verify'] = false;
-                Log::warning('SSL verification disabled for development. This should not be used in production.');
-            }
-        }
-        
-        return new Client($options);
-    }
-
     public function redirectToGoogle()
     {
         // Check if Google OAuth is configured

@@ -17,6 +17,7 @@
                 <div>
                     <h2 class="text-lg font-semibold text-gray-800">{{ $order->customer->name ?? 'Customer' }}</h2>
                     <p class="text-sm text-gray-600">Order #{{ $order->id }}</p>
+                    <p class="text-sm text-gray-600 mt-1">Location: {{ $order->customer->address ?? 'Not provided' }}</p>
                 </div>
                 <span class="px-3 py-1 text-sm rounded-full 
                     @if($order->status === 'pending') bg-yellow-100 text-yellow-700
@@ -34,8 +35,6 @@
                         Product: {{ $order->offering->name ?? 'Unknown' }}
                     @elseif($order->offering_type === 'service')
                         Service: {{ $order->offering->name ?? 'Unknown' }}
-                    @else
-                        Business: {{ $order->offering->name ?? 'Unknown' }}
                     @endif
                 </p>
                 @if($order->offering_type === 'product' && $order->quantity > 1)
@@ -71,11 +70,7 @@
                         <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">Decline</button>
                     </form>
                 @elseif($order->status === 'accepted')
-                    <form action="{{ route('provider.order.update-status', $order->id) }}" method="POST" class="inline">
-                        @csrf
-                        <input type="hidden" name="status" value="completed">
-                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Mark as Completed</button>
-                    </form>
+                    <span class="px-4 py-2 bg-gray-100 text-gray-700 rounded">Waiting for customer to mark completion</span>
                 @endif
             </div>
         </div>

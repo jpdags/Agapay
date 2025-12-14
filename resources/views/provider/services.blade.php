@@ -3,7 +3,7 @@
 @section('content')
 
 <h1 class="text-2xl font-bold text-dark-red mb-4">My Offerings</h1>
-<p class="text-gray-600 mb-6">Manage your products, services, and business offerings</p>
+<p class="text-gray-600 mb-6">Manage your products and services</p>
 
 <!-- Tabs for different offering types -->
 <div class="mb-6">
@@ -13,9 +13,6 @@
         </button>
         <button onclick="showTab('services')" id="tab-services" class="px-4 py-2 font-medium text-gray-500 hover:text-gray-700 tab-button">
             Services ({{ count($services ?? []) }})
-        </button>
-        <button onclick="showTab('businesses')" id="tab-businesses" class="px-4 py-2 font-medium text-gray-500 hover:text-gray-700 tab-button">
-            Businesses ({{ count($businesses ?? []) }})
         </button>
     </div>
 </div>
@@ -27,9 +24,6 @@
     </button>
     <button onclick="openAddModal('service')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
         + Add Service
-    </button>
-    <button onclick="openAddModal('business')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition">
-        + Add Business
     </button>
 </div>
 
@@ -52,9 +46,9 @@
 <!-- Products Tab -->
 <div id="content-products" class="tab-content">
     <h2 class="text-lg font-semibold text-gray-800 mb-4">My Products</h2>
-<div class="space-y-4">
+    <div class="space-y-4">
         @forelse($products ?? [] as $product)
-        <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
+            <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
                 <div class="flex justify-between items-start">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-800">{{ $product->name }}</h2>
@@ -114,36 +108,6 @@
     </div>
 </div>
 
-<!-- Businesses Tab -->
-<div id="content-businesses" class="tab-content hidden">
-    <h2 class="text-lg font-semibold text-gray-800 mb-4">My Businesses</h2>
-    <div class="space-y-4">
-        @forelse($businesses ?? [] as $business)
-            <div class="bg-white p-5 rounded shadow border hover:shadow-md transition">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800">{{ $business->name }}</h2>
-                        <p class="text-sm text-gray-700">{{ $business->description }}</p>
-                        <p class="text-xs text-gray-600 mt-1">Category: {{ $business->category }}</p>
-                        <p class="text-xs text-gray-600">Contact: {{ $business->contact }}</p>
-                    </div>
-                </div>
-            <div class="mt-4 flex gap-2">
-                    <button data-type="business" data-id="{{ $business->id }}" onclick="openEditModal(this.dataset.type, parseInt(this.dataset.id))" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Edit</button>
-                    <form action="{{ route('provider.offering.delete', ['type' => 'business', 'id' => $business->id]) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this business?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove</button>
-                    </form>
-                </div>
-            </div>
-        @empty
-            <div class="bg-white p-5 rounded shadow border">
-                <p class="text-gray-500 text-center">No businesses added yet.</p>
-            </div>
-        @endforelse
-    </div>
-</div>
 
 <style>
     .tab-button.active {
@@ -203,21 +167,18 @@
 <!-- Hidden data elements for JavaScript -->
 <script type="application/json" id="products-data">{!! json_encode($products ?? []) !!}</script>
 <script type="application/json" id="services-data">{!! json_encode($services ?? []) !!}</script>
-<script type="application/json" id="businesses-data">{!! json_encode($businesses ?? []) !!}</script>
 
 <script>
     const offeringsData = {
         products: JSON.parse(document.getElementById('products-data').textContent),
-        services: JSON.parse(document.getElementById('services-data').textContent),
-        businesses: JSON.parse(document.getElementById('businesses-data').textContent)
+        services: JSON.parse(document.getElementById('services-data').textContent)
     };
 
     function openAddModal(type) {
-        // Map type to tab name (handle special case for business -> businesses)
+        // Map type to tab name
         const tabMap = {
             'product': 'products',
-            'service': 'services',
-            'business': 'businesses'
+            'service': 'services'
         };
         showTab(tabMap[type] || type + 's');
         const modal = document.getElementById('offeringModal');
@@ -283,37 +244,16 @@
                     <input type="number" name="rate" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red" placeholder="Service rate per hour/day">
                 </div>
             `;
-        } else if (type === 'business') {
-            title.textContent = 'Add New Business';
-            fields.innerHTML = `
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-600 mb-1">Business Name *</label>
-                    <input type="text" name="name" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-600 mb-1">Category *</label>
-                    <input type="text" name="category" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red" placeholder="e.g., Food, Crafts, Retail">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-600 mb-1">Contact *</label>
-                    <input type="text" name="contact" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red" placeholder="Phone number or email">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-600 mb-1">Description *</label>
-                    <textarea name="description" required rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red" placeholder="Describe your business..."></textarea>
-                </div>
-            `;
         }
 
         modal.classList.remove('hidden');
     }
 
     function openEditModal(type, id) {
-        // Map type to tab name (handle special case for business -> businesses)
+        // Map type to tab name
         const tabMap = {
             'product': 'products',
-            'service': 'services',
-            'business': 'businesses'
+            'service': 'services'
         };
         showTab(tabMap[type] || type + 's');
         const modal = document.getElementById('offeringModal');
@@ -391,26 +331,6 @@
                 <div class="mb-4">
                     <label class="block text-sm text-gray-600 mb-1">Rate (₱) *</label>
                     <input type="number" name="rate" value="${data.rate || ''}" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red">
-                </div>
-            `;
-        } else if (type === 'business') {
-            title.textContent = 'Edit Business';
-            fields.innerHTML = `
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-600 mb-1">Business Name *</label>
-                    <input type="text" name="name" value="${data.name || ''}" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-600 mb-1">Category *</label>
-                    <input type="text" name="category" value="${data.category || ''}" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-600 mb-1">Contact *</label>
-                    <input type="text" name="contact" value="${data.contact || ''}" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-600 mb-1">Description *</label>
-                    <textarea name="description" required rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-red">${data.description || ''}</textarea>
                 </div>
             `;
         }

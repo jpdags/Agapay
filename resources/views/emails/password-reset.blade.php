@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Changed - Agapay</title>
+    <title>Password Reset - Agapay</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -33,6 +33,15 @@
             margin: 15px 0;
             border-radius: 5px;
         }
+        .button {
+            display: inline-block;
+            background-color: #8B0000;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
         .footer {
             text-align: center;
             margin-top: 20px;
@@ -45,31 +54,34 @@
 </head>
 <body>
     <div class="header">
-        <h1>Password Changed</h1>
+        <h1>Password Reset Request</h1>
     </div>
     
     <div class="content">
         <h2>Hello {{ $userName }},</h2>
         
-        <p>This is to confirm that your password has been successfully changed.</p>
+        <p>We received a request to reset your password for your Agapay account.</p>
 
         <div class="alert-box">
             <p><strong>Security Notice:</strong></p>
-            <p>If you did not make this change, please contact us immediately and change your password again.</p>
+            <p>If you did not request a password reset, please ignore this email. Your password will remain unchanged.</p>
         </div>
 
-        <p><strong>Account Details:</strong></p>
-        <ul>
-            <li>Email: {{ $userEmail }}</li>
-            <li>Time: {{ $changedAt }}</li>
-        </ul>
+        <p>To reset your password, click the button below:</p>
+        
+        <div style="text-align: center;">
+            <a href="{{ $resetUrl }}" class="button">Reset Password</a>
+        </div>
 
-        <p>For your security, if you did not make this change, please:</p>
-        <ol>
-            <li>Change your password immediately</li>
-            <li>Review your account security settings</li>
-            <li>Contact support if you notice any suspicious activity</li>
-        </ol>
+        <p>Or copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; color: #666; font-size: 12px;">{{ $resetUrl }}</p>
+
+        <p><strong>Important:</strong></p>
+        <ul>
+            <li>This link will expire in {{ $expiresIn }}</li>
+            <li>For security reasons, this link can only be used once</li>
+            <li>If you didn't request this, you can safely ignore this email</li>
+        </ul>
     </div>
 
     <div class="footer">
@@ -78,3 +90,4 @@
     </div>
 </body>
 </html>
+

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Service;
-use App\Models\Entrepreneurship;
 use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 
@@ -42,9 +41,7 @@ class CategoryController extends Controller
             }
             
             // Get real data from database for display
-            // Merge products and entrepreneurship into one "products" category
             $products = Product::with('user')->get();
-            $businesses = Entrepreneurship::with('user')->get();
             
             // Get reviews for products
             $productReviews = Order::where('offering_type', 'product')
@@ -54,15 +51,7 @@ class CategoryController extends Controller
                 ->get()
                 ->groupBy('offering_id');
             
-            // Get reviews for businesses
-            $businessReviews = Order::where('offering_type', 'business')
-                ->where('status', 'completed')
-                ->whereNotNull('rating')
-                ->with('customer')
-                ->get()
-                ->groupBy('offering_id');
-            
-            // Combine products and businesses into one array with reviews
+            // Map products with reviews
             $allProducts = $products->map(function($product) use ($productReviews) {
                 $reviews = $productReviews->get($product->id, collect());
                 $product->reviews = $reviews->map(function($review) {
@@ -79,38 +68,12 @@ class CategoryController extends Controller
                 })->values();
                 $product->average_rating = $reviews->isNotEmpty() ? round($reviews->avg('rating'), 1) : 0;
                 $product->total_reviews = $reviews->count();
+                // Ensure user relationship is loaded with address
+                if ($product->user) {
+                    $product->user->makeVisible(['address']);
+                }
                 return $product;
-            })->concat($businesses->map(function($business) use ($businessReviews) {
-                $reviews = $businessReviews->get($business->id, collect());
-                // Convert business to product-like structure for display
-                $obj = (object)[
-                    'id' => $business->id,
-                    'name' => $business->name,
-                    'brand' => null,
-                    'price' => 0,
-                    'delivery_fee' => 0,
-                    'user' => $business->user,
-                    'category' => $business->category,
-                    'contact' => $business->contact,
-                    'description' => $business->description,
-                    'type' => 'business', // Mark as business type
-                    'reviews' => $reviews->map(function($review) {
-                        return [
-                            'id' => $review->id,
-                            'rating' => $review->rating,
-                            'comment' => $review->comment,
-                            'created_at' => $review->created_at ? $review->created_at->toDateTimeString() : null,
-                            'customer' => $review->customer ? [
-                                'id' => $review->customer->id,
-                                'name' => $review->customer->name,
-                            ] : null,
-                        ];
-                    })->values(),
-                    'average_rating' => $reviews->isNotEmpty() ? round($reviews->avg('rating'), 1) : 0,
-                    'total_reviews' => $reviews->count(),
-                ];
-                return $obj;
-            }));
+            });
             
             // Get reviews for services
             $serviceReviews = Order::where('offering_type', 'service')
@@ -136,6 +99,10 @@ class CategoryController extends Controller
                 })->values();
                 $service->average_rating = $reviews->isNotEmpty() ? round($reviews->avg('rating'), 1) : 0;
                 $service->total_reviews = $reviews->count();
+                // Ensure user relationship is loaded with address
+                if ($service->user) {
+                    $service->user->makeVisible(['address']);
+                }
                 return $service;
             });
             
@@ -146,27 +113,11 @@ class CategoryController extends Controller
         return view('categories.index');
     }
 
-    // Show products (now includes both products and entrepreneurship)
+    // Show products
     public function products()
     {
-        // Real data from database - merge products and businesses
-        $products = Product::with('user')->get();
-        $businesses = Entrepreneurship::with('user')->get();
-        // Combine into one collection
-        $allProducts = $products->concat($businesses->map(function($business) {
-            return (object)[
-                'id' => $business->id,
-                'name' => $business->name,
-                'brand' => null,
-                'price' => 0,
-                'delivery_fee' => 0,
-                'user' => $business->user,
-                'category' => $business->category,
-                'contact' => $business->contact,
-                'description' => $business->description,
-                'type' => 'business',
-            ];
-        }));
+        // Real data from database
+        $allProducts = Product::with('user')->get();
         return view('categories.products', compact('allProducts'));
     }
 

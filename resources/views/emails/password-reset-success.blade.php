@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notification Settings Updated - Agapay</title>
+    <title>Password Reset Successful - Agapay</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,18 +26,12 @@
             border: 1px solid #ddd;
             border-top: none;
         }
-        .status-box {
+        .success-box {
+            background-color: #D1FAE5;
+            border-left: 4px solid #10B981;
             padding: 15px;
             margin: 15px 0;
             border-radius: 5px;
-        }
-        .status-box.enabled {
-            background-color: #D1FAE5;
-            border-left: 4px solid #10B981;
-        }
-        .status-box.disabled {
-            background-color: #FEE2E2;
-            border-left: 4px solid #EF4444;
         }
         .footer {
             text-align: center;
@@ -51,34 +45,31 @@
 </head>
 <body>
     <div class="header">
-        <h1>Notification Settings Updated</h1>
+        <h1>Password Reset Successful</h1>
     </div>
     
     <div class="content">
         <h2>Hello {{ $userName }},</h2>
         
-        <p>Your notification settings have been updated.</p>
+        <p>Your password has been successfully reset.</p>
 
-        <div class="status-box {{ $enabled ? 'enabled' : 'disabled' }}">
-            <p><strong>Current Status:</strong></p>
-            <p style="font-size: 18px; font-weight: bold;">
-                Notifications are now <strong>{{ $enabled ? 'ENABLED' : 'DISABLED' }}</strong>
-            </p>
+        <div class="success-box">
+            <p><strong>✓ Password Reset Confirmed</strong></p>
+            <p>Your Agapay account password was changed on {{ $resetAt }}.</p>
         </div>
 
-        @if($enabled)
-            <p>You will now receive email notifications for:</p>
-            <ul>
-                <li>New booking requests</li>
-                <li>Booking status updates</li>
-                <li>Account security changes</li>
-                <li>Important account updates</li>
-            </ul>
-        @else
-            <p>You will no longer receive email notifications. You can re-enable them anytime in your account settings.</p>
-        @endif
+        <p><strong>What to do next:</strong></p>
+        <ul>
+            <li>You can now log in with your new password</li>
+            <li>If you did not make this change, please contact support immediately</li>
+            <li>For security, consider enabling two-factor authentication if available</li>
+        </ul>
 
-        <p><strong>Updated at:</strong> {{ $updatedAt }}</p>
+        <p style="margin-top: 20px;">
+            <a href="{{ url('/login') }}" style="background-color: #8B0000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Log In Now
+            </a>
+        </p>
     </div>
 
     <div class="footer">
@@ -87,3 +78,4 @@
     </div>
 </body>
 </html>
+

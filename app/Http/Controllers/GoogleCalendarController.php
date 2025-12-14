@@ -8,8 +8,6 @@ use Google_Client;
 use Google_Service_Calendar;
 use Google_Service_Calendar_Event;
 use Google_Service_Calendar_EventDateTime;
-use Google_Service_Gmail;
-use Google_Service_Gmail_Message;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 
@@ -22,8 +20,6 @@ class GoogleCalendarController extends Controller
     {
         $options = [];
         
-        // Try to use system certificate store on Windows
-        // If php.ini has curl.cainfo set, use that
         $caBundle = ini_get('curl.cainfo');
         if ($caBundle && file_exists($caBundle)) {
             $options['verify'] = $caBundle;
@@ -31,14 +27,10 @@ class GoogleCalendarController extends Controller
             // Try the default Windows PHP location
             $options['verify'] = 'C:\php\extras\ssl\cacert.pem';
         } else {
-            // For development: disable SSL verification (NOT recommended for production)
-            // In production, you should download cacert.pem from https://curl.se/ca/cacert.pem
-            // and set it in php.ini: curl.cainfo = "C:\path\to\cacert.pem"
             if (config('app.debug', false)) {
                 $options['verify'] = false;
                 Log::warning('SSL verification disabled for development. This should not be used in production.');
             } else {
-                // In production, try to use default system certificates
                 $options['verify'] = true;
             }
         }
@@ -91,16 +83,17 @@ class GoogleCalendarController extends Controller
         $client->setScopes([
             Google_Service_Calendar::CALENDAR,
             Google_Service_Calendar::CALENDAR_EVENTS,
-            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.send', // also allow sending email notifications
         ]);
         $client->setAccessType('offline');
-        $client->setPrompt('consent');
+        // Don't set prompt here - it will be set in redirect() method with login hint
         
         return $client;
     }
 
     /**
      * Redirect to Google Calendar authorization
+     * If user already has a token, force re-authorization to ensure Gmail scope is included
      */
     public function redirect()
     {
@@ -108,7 +101,20 @@ class GoogleCalendarController extends Controller
             return redirect()->route('login');
         }
 
+        $user = Auth::user();
         $client = $this->getGoogleClient();
+        
+        if ($user->email) {
+            $client->setLoginHint($user->email);
+        }
+        
+        // If user already has a token, force re-authorization to ensure all scopes (including Gmail) are granted
+        // This is important because existing tokens might not have the Gmail scope
+        if ($user->google_calendar_token) {
+            $client->setPrompt('consent'); // Force consent screen to ensure all scopes are granted
+            Log::info("Forcing re-authorization for user {$user->id} to ensure Gmail scope is included");
+        }
+        
         $authUrl = $client->createAuthUrl();
         
         return redirect($authUrl);
@@ -123,32 +129,76 @@ class GoogleCalendarController extends Controller
             return redirect()->route('login');
         }
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $client = $this->getGoogleClient();
+
+        // Pick a sensible post-auth redirect based on user role
+        $redirectRoute = ($user->user_type === 0) ? 'provider.schedule' : 'bookings';
 
         if ($request->has('code')) {
             try {
                 $token = $client->fetchAccessTokenWithAuthCode($request->get('code'));
                 
                 if (isset($token['error'])) {
-                    return redirect()->route('bookings')->with('error', 'Failed to connect Google Calendar: ' . $token['error']);
+                    return redirect()->route($redirectRoute)->with('error', 'Failed to connect Google Calendar: ' . $token['error']);
                 }
             } catch (\Exception $e) {
                 Log::error('Failed to fetch Google Calendar access token', [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
-                return redirect()->route('bookings')->with('error', 'Failed to connect Google Calendar: ' . $e->getMessage());
+                return redirect()->route($redirectRoute)->with('error', 'Failed to connect Google Calendar: ' . $e->getMessage());
             }
 
             // Store the token
             $user->google_calendar_token = json_encode($token);
             $user->save();
-
-            return redirect()->route('bookings')->with('success', 'Google Calendar connected successfully!');
+            
+            // Verify that the token includes Gmail scope
+            $tokenData = is_array($token) ? $token : json_decode($token, true);
+            $hasGmailScope = false;
+            if (isset($tokenData['scope'])) {
+                $scopes = is_string($tokenData['scope']) ? explode(' ', $tokenData['scope']) : $tokenData['scope'];
+                $hasGmailScope = in_array('https://www.googleapis.com/auth/gmail.send', $scopes);
+            }
+            
+            if ($hasGmailScope) {
+                Log::info("User {$user->id} successfully authorized with Gmail scope");
+                return redirect()->route($redirectRoute)->with('success', 'Google Calendar and Gmail connected successfully! You will now receive email notifications.');
+            } else {
+                Log::warning("User {$user->id} authorized but Gmail scope not found in token. They may need to re-authorize.");
+                return redirect()->route($redirectRoute)->with('warning', 'Google Calendar connected, but Gmail permissions may be missing. If you don\'t receive email notifications, please reconnect.');
+            }
         }
 
-        return redirect()->route('bookings')->with('error', 'Failed to connect Google Calendar.');
+        return redirect()->route($redirectRoute)->with('error', 'Failed to connect Google Calendar.');
+    }
+
+    /**
+     * Disconnect Google Calendar (and Gmail)
+     */
+    public function disconnect(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $redirectRoute = ($user->user_type === 0) ? 'provider.schedule' : 'bookings';
+
+        try {
+            $user->google_calendar_token = null;
+            $user->save();
+            
+            Log::info("User {$user->id} disconnected Google Calendar");
+            
+            return redirect()->route($redirectRoute)->with('success', 'Google Calendar disconnected. Reconnect to enable calendar sync and email notifications.');
+        } catch (\Exception $e) {
+            Log::error('Failed to disconnect Google Calendar: ' . $e->getMessage());
+            return redirect()->route($redirectRoute)->with('error', 'Failed to disconnect Google Calendar.');
+        }
     }
 
     /**
@@ -182,56 +232,24 @@ class GoogleCalendarController extends Controller
         $client->setAccessToken(json_decode($user->google_calendar_token, true));
 
         // Refresh token if expired
-        if ($client->isAccessTokenExpired()) {
-            $client->refreshToken($client->getRefreshToken());
-            $newToken = $client->getAccessToken();
-            $user->google_calendar_token = json_encode($newToken);
-            $user->save();
+        if ($this->refreshTokenIfNeeded($client, $user) === false) {
+            return response()->json(['error' => 'Failed to refresh Google Calendar token'], 401);
+        }
+
+        // Ensure relationships are loaded
+        if (!$order->relationLoaded('customer')) {
+            $order->load('customer');
+        }
+        if (!$order->relationLoaded('provider')) {
+            $order->load('provider');
+        }
+        if (!$order->offering_name) {
+            $order->loadOffering();
         }
 
         $service = new Google_Service_Calendar($client);
-
-        // Create event
-        $event = new Google_Service_Calendar_Event();
-        
-        $offeringName = $order->offering_name ?? 'Booking';
-        
-        // Determine if user is customer or provider
         $isProvider = $order->provider_id === $user->id;
-        
-        if ($isProvider) {
-            $event->setSummary('Agapay Appointment: ' . $offeringName);
-            $description = "Appointment #{$order->id}\n";
-            $description .= "Customer: " . ($order->customer->name ?? 'Unknown') . "\n";
-        } else {
-            $event->setSummary('Agapay Booking: ' . $offeringName);
-            $description = "Order #{$order->id}\n";
-            $description .= "Provider: " . ($order->provider->name ?? 'Unknown') . "\n";
-        }
-        
-        if ($order->notes) {
-            $description .= "Notes: {$order->notes}\n";
-        }
-        $event->setDescription($description);
-
-        // Set start time
-        $startDateTime = new Google_Service_Calendar_EventDateTime();
-        $startDate = \Carbon\Carbon::parse($order->scheduled_date);
-        if ($order->scheduled_time) {
-            $time = \Carbon\Carbon::parse($order->scheduled_time);
-            $startDate->setTime($time->hour, $time->minute);
-        }
-        $startDateTime->setDateTime($startDate->toRfc3339String());
-        $startDateTime->setTimeZone('Asia/Manila');
-        $event->setStart($startDateTime);
-
-        // Set end time (1 hour default, or adjust based on offering type)
-        $endDateTime = new Google_Service_Calendar_EventDateTime();
-        $endDate = clone $startDate;
-        $endDate->addHour(); // Default 1 hour duration
-        $endDateTime->setDateTime($endDate->toRfc3339String());
-        $endDateTime->setTimeZone('Asia/Manila');
-        $event->setEnd($endDateTime);
+        $event = $this->createCalendarEvent($order, $isProvider);
 
         try {
             $calendarId = 'primary';
@@ -280,64 +298,13 @@ class GoogleCalendarController extends Controller
             $client->setAccessToken(json_decode($user->google_calendar_token, true));
 
             // Refresh token if expired
-            if ($client->isAccessTokenExpired()) {
-                $refreshToken = $client->getRefreshToken();
-                if ($refreshToken) {
-                    $client->refreshToken($refreshToken);
-                    $newToken = $client->getAccessToken();
-                    $user->google_calendar_token = json_encode($newToken);
-                    $user->save();
-                } else {
-                    Log::warning("Google Calendar token expired and no refresh token available for user {$user->id}");
-                    return false;
-                }
+            if ($controller->refreshTokenIfNeeded($client, $user) === false) {
+                return false;
             }
 
             $service = new Google_Service_Calendar($client);
-
-            // Create event
-            $event = new Google_Service_Calendar_Event();
-            
-            $offeringName = $order->offering_name ?? 'Booking';
-            
-            // Determine if user is customer or provider
             $isProvider = $order->provider_id === $user->id;
-            
-            if ($isProvider) {
-                $event->setSummary('Agapay Appointment: ' . $offeringName);
-                $description = "Appointment #{$order->id}\n";
-                $description .= "Customer: " . ($order->customer->name ?? 'Unknown') . "\n";
-            } else {
-                $event->setSummary('Agapay Booking: ' . $offeringName);
-                $description = "Order #{$order->id}\n";
-                $description .= "Provider: " . ($order->provider->name ?? 'Unknown') . "\n";
-            }
-            
-            $description .= "Status: " . ucfirst($order->status) . "\n";
-            
-            if ($order->notes) {
-                $description .= "Notes: {$order->notes}\n";
-            }
-            $event->setDescription($description);
-
-            // Set start time
-            $startDateTime = new Google_Service_Calendar_EventDateTime();
-            $startDate = \Carbon\Carbon::parse($order->scheduled_date);
-            if ($order->scheduled_time) {
-                $time = \Carbon\Carbon::parse($order->scheduled_time);
-                $startDate->setTime($time->hour, $time->minute);
-            }
-            $startDateTime->setDateTime($startDate->toRfc3339String());
-            $startDateTime->setTimeZone('Asia/Manila');
-            $event->setStart($startDateTime);
-
-            // Set end time (1 hour default)
-            $endDateTime = new Google_Service_Calendar_EventDateTime();
-            $endDate = clone $startDate;
-            $endDate->addHour();
-            $endDateTime->setDateTime($endDate->toRfc3339String());
-            $endDateTime->setTimeZone('Asia/Manila');
-            $event->setEnd($endDateTime);
+            $event = $controller->createCalendarEvent($order, $isProvider);
 
             $calendarId = 'primary';
             $createdEvent = $service->events->insert($calendarId, $event);
@@ -351,127 +318,110 @@ class GoogleCalendarController extends Controller
     }
 
     /**
-     * Get events from Google Calendar
+     * Get calendar embed URL for the user
      */
-    public function getEvents()
+    public function getCalendarEmbedUrl()
     {
         if (!Auth::check()) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return null;
         }
 
         $user = Auth::user();
         
         if (!$user->google_calendar_token) {
-            return response()->json(['events' => []]);
+            return null;
         }
 
-        $client = $this->getGoogleClient();
-        $client->setAccessToken(json_decode($user->google_calendar_token, true));
+        // Use the user's email as the calendar ID for embed
+        // Note: For this to work, the calendar needs to be publicly accessible
+        // or the user needs to share it. Alternatively, we can use the API to fetch events.
+        $email = urlencode($user->email);
+        return "https://calendar.google.com/calendar/embed?src={$email}&ctz=Asia/Manila";
+    }
 
-        // Refresh token if expired
-        if ($client->isAccessTokenExpired()) {
-            $client->refreshToken($client->getRefreshToken());
-            $newToken = $client->getAccessToken();
-            $user->google_calendar_token = json_encode($newToken);
-            $user->save();
+    /**
+     * Refresh Google access token if expired
+     * Returns true if successful, false if failed
+     * If user is provided, saves the updated token to database
+     */
+    private function refreshTokenIfNeeded($client, $user = null)
+    {
+        if (!$client->isAccessTokenExpired()) {
+            return true;
         }
-
+        
+        $refreshToken = $client->getRefreshToken();
+        if (!$refreshToken) {
+            if ($user) {
+                Log::warning("Google Calendar token expired and no refresh token available for user {$user->id}");
+            }
+            return false;
+        }
+        
         try {
-            $service = new Google_Service_Calendar($client);
-            $calendarId = 'primary';
+            $client->refreshToken($refreshToken);
+            $newToken = $client->getAccessToken();
             
-            // Get events for the next 30 days
-            $optParams = [
-                'maxResults' => 50,
-                'orderBy' => 'startTime',
-                'singleEvents' => true,
-                'timeMin' => now()->toRfc3339String(),
-                'timeMax' => now()->addDays(30)->toRfc3339String(),
-            ];
-            
-            $results = $service->events->listEvents($calendarId, $optParams);
-            $events = [];
-            
-            foreach ($results->getItems() as $event) {
-                $start = $event->getStart()->getDateTime();
-                $end = $event->getEnd()->getDateTime();
-                
-                $events[] = [
-                    'id' => $event->getId(),
-                    'summary' => $event->getSummary(),
-                    'description' => $event->getDescription(),
-                    'start' => $start,
-                    'end' => $end,
-                ];
+            // Save updated token if user object is provided
+            if ($user) {
+                $user->google_calendar_token = json_encode($newToken);
+                $user->save();
             }
             
-            return response()->json(['events' => $events]);
+            return true;
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to fetch events: ' . $e->getMessage()], 500);
+            if ($user) {
+                Log::warning("Failed to refresh Google Calendar token for user {$user->id}: " . $e->getMessage());
+            }
+            return false;
         }
     }
 
     /**
-     * Send email notification via Gmail API
+     * Create a Google Calendar event from an order
      */
-    public static function sendGmailNotification($to, $subject, $htmlBody, $userToken = null)
+    private function createCalendarEvent($order, $isProvider)
     {
-        try {
-            // If user token is provided, use it; otherwise try to find user by email
-            if ($userToken) {
-                $token = $userToken;
-            } else {
-                $user = \App\Models\User::where('email', $to)->first();
-                if (!$user || !$user->google_calendar_token) {
-                    return false;
-                }
-                $token = $user->google_calendar_token;
-            }
-
-            $controller = new self();
-            $client = $controller->getGoogleClient();
-            $client->setAccessToken(json_decode($token, true));
-
-            // Refresh token if expired
-            if ($client->isAccessTokenExpired()) {
-                $refreshToken = $client->getRefreshToken();
-                if ($refreshToken) {
-                    $client->refreshToken($refreshToken);
-                    $newToken = $client->getAccessToken();
-                    if (!$userToken) {
-                        $user = \App\Models\User::where('email', $to)->first();
-                        if ($user) {
-                            $user->google_calendar_token = json_encode($newToken);
-                            $user->save();
-                        }
-                    }
-                } else {
-                    return false;
-                }
-            }
-
-            // Create Gmail service
-            $service = new Google_Service_Gmail($client);
-
-            // Create message
-            $message = new Google_Service_Gmail_Message();
-            
-            // Encode message
-            $rawMessage = "To: {$to}\r\n";
-            $rawMessage .= "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n";
-            $rawMessage .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $rawMessage .= "\r\n";
-            $rawMessage .= $htmlBody;
-
-            $message->setRaw(base64_encode($rawMessage));
-
-            // Send message
-            $service->users_messages->send('me', $message);
-            
-            return true;
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Gmail notification failed: ' . $e->getMessage());
-            return false;
+        $event = new Google_Service_Calendar_Event();
+        $offeringName = $order->offering_name ?? 'Booking';
+        
+        if ($isProvider) {
+            $event->setSummary('Agapay Appointment: ' . $offeringName);
+            $description = "Appointment #{$order->id}\n";
+            $description .= "Customer: " . ($order->customer->name ?? 'Unknown') . "\n";
+        } else {
+            $event->setSummary('Agapay Booking: ' . $offeringName);
+            $description = "Order #{$order->id}\n";
+            $description .= "Provider: " . ($order->provider->name ?? 'Unknown') . "\n";
         }
+        
+        $description .= "Status: " . ucfirst($order->status) . "\n";
+        
+        if ($order->notes) {
+            $description .= "Notes: {$order->notes}\n";
+        }
+        $event->setDescription($description);
+
+        // Set start time
+        $startDateTime = new Google_Service_Calendar_EventDateTime();
+        $startDate = \Carbon\Carbon::parse($order->scheduled_date);
+        if ($order->scheduled_time) {
+            $time = \Carbon\Carbon::parse($order->scheduled_time);
+            $startDate->setTime($time->hour, $time->minute);
+        }
+        $startDateTime->setDateTime($startDate->toRfc3339String());
+        $startDateTime->setTimeZone('Asia/Manila');
+        $event->setStart($startDateTime);
+
+        // Set end time (1 hour default)
+        $endDateTime = new Google_Service_Calendar_EventDateTime();
+        $endDate = clone $startDate;
+        $endDate->addHour();
+        $endDateTime->setDateTime($endDate->toRfc3339String());
+        $endDateTime->setTimeZone('Asia/Manila');
+        $event->setEnd($endDateTime);
+        
+        return $event;
     }
+
 }

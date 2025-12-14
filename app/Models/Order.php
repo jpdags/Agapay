@@ -43,7 +43,7 @@ class Order extends Model
     // Cache for the offering
     protected $cachedOffering = null;
 
-    // Get the offering (product, service, or business) - manual resolution
+    // Get the offering (product or service) - manual resolution
     public function getOfferingAttribute()
     {
         if ($this->cachedOffering !== null) {
@@ -57,7 +57,6 @@ class Order extends Model
         $typeMap = [
             'product' => Product::class,
             'service' => Service::class,
-            'business' => Entrepreneurship::class,
         ];
 
         $modelClass = $typeMap[$this->offering_type] ?? null;

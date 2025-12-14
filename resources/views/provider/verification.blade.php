@@ -60,7 +60,7 @@
     <div class="bg-white p-6 rounded-lg shadow mb-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">Profile Information</h2>
 
-        <form action="{{ route('provider.verification.update') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('provider.settings.update') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             <div class="flex items-center gap-4 mb-4">
@@ -123,11 +123,11 @@
         <h2 class="text-lg font-semibold text-gray-800 mb-4">Verification Status</h2>
 
         <p class="text-gray-700">
-        <strong>Status:</strong>
+            <strong>Status:</strong>
             <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full ml-2">
                 Pending Verification
-        </span>
-    </p>
+            </span>
+        </p>
         <p class="text-gray-500 text-sm mt-1">Your account is being reviewed for verification.</p>
 
         <div class="mt-4">
@@ -136,12 +136,9 @@
                 <li>Valid ID (Government-issued)</li>
                 <li>Barangay Certificate</li>
                 <li>Business Permit (if applicable)</li>
-    </ul>
+            </ul>
         </div>
 
-        <button class="mt-4 px-4 py-2 bg-dark-red text-white rounded hover:bg-red-800 transition">
-            Upload Verification Documents
-        </button>
     </div>
 
     <!-- Account Settings -->
@@ -177,7 +174,7 @@
                         </button>
                         <button type="button" onclick="togglePasswordForm()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition">
                             Cancel
-    </button>
+                        </button>
                     </div>
                 </form>
             </div>

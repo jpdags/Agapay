@@ -32,7 +32,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100" style="background-color: #F3F4F6;">
+<body class="bg-gray-100">
 
 <div class="flex h-screen">
 
@@ -69,10 +69,10 @@
                 <span class="font-medium">Schedule</span>
             </a>
 
-            <a href="{{ route('provider.verification') }}" 
-               class="flex items-center px-6 py-3 sidebar-link {{ request()->routeIs('provider.verification') ? 'sidebar-active' : '' }}">
-                <span class="material-symbols-outlined text-2xl mr-4">verified</span>
-                <span class="font-medium">Verification</span>
+            <a href="{{ route('provider.settings') }}" 
+               class="flex items-center px-6 py-3 sidebar-link {{ request()->routeIs('provider.settings') ? 'sidebar-active' : '' }}">
+                <span class="material-symbols-outlined text-2xl mr-4">settings</span>
+                <span class="font-medium">Settings</span>
             </a>
 
         </nav>
@@ -89,10 +89,10 @@
     </div>
 
     <!-- Main -->
-    <div class="flex-1 overflow-x-hidden overflow-y-auto" style="background-color: #F3F4F6;">
+    <div class="flex-1 overflow-x-hidden overflow-y-auto">
 
         <!-- Header -->
-        <header class="bg-white shadow-sm" style="background-color: #FFFFFF;">
+        <header class="bg-white shadow-sm">
             <div class="px-6 py-4 flex justify-between items-center">
                 <div>
                     <h2 class="text-xl font-semibold text-gray-800">
@@ -117,7 +117,7 @@
         </header>
 
         <!-- Dynamic Page Content -->
-        <main class="p-6" style="background-color: #F3F4F6; min-height: calc(100vh - 80px);">
+        <main class="p-6" style="min-height: calc(100vh - 80px);">
             @yield('content')
         </main>
 

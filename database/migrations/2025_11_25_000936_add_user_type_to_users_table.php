@@ -11,7 +11,7 @@ class AddUserTypeToUsersTable extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->string('google_id')->nullable();
             $table->string('password')->nullable()->change();
-            $table->integer('user_type')->default(1); // 1 = customer, 0 = business
+            $table->integer('user_type')->default(1); // 1 = customer, 0 = provider
         });
     }
 

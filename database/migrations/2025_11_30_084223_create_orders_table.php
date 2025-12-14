@@ -16,11 +16,11 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('provider_id')->constrained('users')->onDelete('cascade');
             
-            // Polymorphic relationship for the offering (product, service, or business)
-            $table->string('offering_type'); // 'product', 'service', or 'business'
-            $table->unsignedBigInteger('offering_id'); // ID of the product/service/business
+            // Polymorphic relationship for the offering (product or service)
+            $table->string('offering_type'); // 'product' or 'service'
+            $table->unsignedBigInteger('offering_id'); // ID of the product or service
             
-            $table->string('status')->default('pending'); // pending, accepted, declined, completed, cancelled
+            $table->string('status')->default('pending'); // pending, accepted, declined, completed
             $table->text('notes')->nullable(); // Customer notes/requirements
             $table->date('scheduled_date')->nullable(); // When the service/product should be delivered
             $table->time('scheduled_time')->nullable(); // Time for scheduled delivery/service

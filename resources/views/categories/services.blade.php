@@ -4,7 +4,7 @@
     <div class="container">
         <h2 class="text-center mb-4">Services</h2>
         <div class="row">
-            @foreach($services as $service)
+            @forelse($services ?? [] as $service)
                 <div class="col-md-4 mb-4">
                     <div class="card">
                         <div class="card-body">
@@ -17,7 +17,13 @@
                         </div>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <p>No services available at the moment.</p>
+                    </div>
+                </div>
+            @endforelse
         </div>
     </div>
 @endsection

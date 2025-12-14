@@ -1,7 +1,7 @@
 @extends('layouts.provider-main')
 
 @section('content')
-    <div style="background-color: transparent;">
+    <div>
         <h2 class="text-xl font-semibold mb-4 text-gray-800">Welcome to your Dashboard</h2>
 
         @if(session('warning'))
@@ -18,22 +18,22 @@
         @endif
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 shadow rounded-lg" style="background-color: #FFFFFF;">
+            <div class="bg-white p-6 shadow rounded-lg">
                 <p class="text-sm text-gray-600 mb-2">Completed Jobs</p>
                 <p class="text-2xl font-bold text-gray-800">{{ $stats['completed_jobs'] ?? 0 }}</p>
             </div>
 
-            <div class="bg-white p-6 shadow rounded-lg" style="background-color: #FFFFFF;">
+            <div class="bg-white p-6 shadow rounded-lg">
                 <p class="text-sm text-gray-600 mb-2">Pending Requests</p>
                 <p class="text-2xl font-bold text-orange-500">{{ $stats['pending_requests'] ?? 0 }}</p>
             </div>
 
-            <div class="bg-white p-6 shadow rounded-lg" style="background-color: #FFFFFF;">
+            <div class="bg-white p-6 shadow rounded-lg">
                 <p class="text-sm text-gray-600 mb-2">Total Earnings</p>
                 <p class="text-2xl font-bold text-green-600">₱{{ number_format($stats['earnings'] ?? 0, 2) }}</p>
             </div>
 
-            <div class="bg-white p-6 shadow rounded-lg" style="background-color: #FFFFFF;">
+            <div class="bg-white p-6 shadow rounded-lg">
                 <p class="text-sm text-gray-600 mb-2">Total Sales</p>
                 <p class="text-2xl font-bold text-blue-600">{{ $stats['total_sales'] ?? 0 }}</p>
             </div>
@@ -41,7 +41,7 @@
 
         <!-- Ratings and Reviews Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white p-6 shadow rounded-lg" style="background-color: #FFFFFF;">
+            <div class="bg-white p-6 shadow rounded-lg">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Rating & Reviews</h3>
                 <div class="flex items-center mb-4">
                     <div class="text-4xl font-bold text-gray-800 mr-4">
@@ -63,7 +63,7 @@
                 @endif
             </div>
 
-            <div class="bg-white p-6 shadow rounded-lg" style="background-color: #FFFFFF;">
+            <div class="bg-white p-6 shadow rounded-lg">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Transaction Summary</h3>
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
@@ -90,7 +90,7 @@
         <div class="mb-8">
             <h3 class="text-xl font-semibold mb-4 text-gray-800">Recent Orders</h3>
             @forelse($recentOrders as $order)
-            <div class="bg-white p-6 rounded-lg shadow mb-4" style="background-color: #FFFFFF;">
+                <div class="bg-white p-6 rounded-lg shadow mb-4">
                     <div class="flex justify-between items-start mb-3">
                         <div>
                             <p class="text-gray-800 font-semibold">{{ $order->customer->name ?? 'Customer' }}</p>
@@ -99,8 +99,6 @@
                                     Product: {{ $order->offering_name ?? 'Unknown' }}
                                 @elseif($order->offering_type === 'service')
                                     Service: {{ $order->offering_name ?? 'Unknown' }}
-                                @else
-                                    Business: {{ $order->offering_name ?? 'Unknown' }}
                                 @endif
                             </p>
                             @if($order->scheduled_date)
@@ -125,8 +123,8 @@
                         <p class="text-sm font-medium text-green-600">Amount: ₱{{ number_format($order->total_amount, 2) }}</p>
                     @endif
             </div>
-        @empty
-            <div class="bg-white p-6 rounded-lg shadow mb-4" style="background-color: #FFFFFF;">
+            @empty
+                <div class="bg-white p-6 rounded-lg shadow mb-4">
                     <p class="text-gray-500 text-center">No recent orders.</p>
                 </div>
             @endforelse
@@ -146,7 +144,7 @@
             @if($ordersWithReviews->count() > 3)
             <div id="reviewsSection" class="hidden">
                 @foreach($ordersWithReviews as $order)
-                    <div class="bg-white p-6 rounded-lg shadow mb-4" style="background-color: #FFFFFF;">
+                    <div class="bg-white p-6 rounded-lg shadow mb-4">
                         <div class="flex justify-between items-start mb-3">
                             <div>
                                 <p class="text-gray-800 font-semibold">{{ $order->customer->name ?? 'Customer' }}</p>
@@ -155,8 +153,6 @@
                                         Product: {{ $order->offering_name ?? 'Unknown' }}
                                     @elseif($order->offering_type === 'service')
                                         Service: {{ $order->offering_name ?? 'Unknown' }}
-                                    @else
-                                        Business: {{ $order->offering_name ?? 'Unknown' }}
                                     @endif
                                 </p>
                                 <p class="text-xs text-gray-500 mt-1">{{ $order->created_at->format('M d, Y') }}</p>
@@ -180,7 +176,7 @@
             <!-- Show first 3 reviews by default -->
             <div id="reviewsPreview">
                 @foreach($ordersWithReviews->take(3) as $order)
-                    <div class="bg-white p-6 rounded-lg shadow mb-4" style="background-color: #FFFFFF;">
+                    <div class="bg-white p-6 rounded-lg shadow mb-4">
                         <div class="flex justify-between items-start mb-3">
                             <div>
                                 <p class="text-gray-800 font-semibold">{{ $order->customer->name ?? 'Customer' }}</p>
@@ -189,8 +185,6 @@
                                         Product: {{ $order->offering_name ?? 'Unknown' }}
                                     @elseif($order->offering_type === 'service')
                                         Service: {{ $order->offering_name ?? 'Unknown' }}
-                                    @else
-                                        Business: {{ $order->offering_name ?? 'Unknown' }}
                                     @endif
                                 </p>
                                 <p class="text-xs text-gray-500 mt-1">{{ $order->created_at->format('M d, Y') }}</p>
@@ -214,7 +208,7 @@
             <!-- Show all reviews if 3 or less -->
             <div>
                 @foreach($ordersWithReviews as $order)
-                    <div class="bg-white p-6 rounded-lg shadow mb-4" style="background-color: #FFFFFF;">
+                    <div class="bg-white p-6 rounded-lg shadow mb-4">
                         <div class="flex justify-between items-start mb-3">
                             <div>
                                 <p class="text-gray-800 font-semibold">{{ $order->customer->name ?? 'Customer' }}</p>
@@ -223,8 +217,6 @@
                                         Product: {{ $order->offering_name ?? 'Unknown' }}
                                     @elseif($order->offering_type === 'service')
                                         Service: {{ $order->offering_name ?? 'Unknown' }}
-                                    @else
-                                        Business: {{ $order->offering_name ?? 'Unknown' }}
                                     @endif
                                 </p>
                                 <p class="text-xs text-gray-500 mt-1">{{ $order->created_at->format('M d, Y') }}</p>
